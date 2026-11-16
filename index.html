@@ -1644,7 +1644,7 @@ const THEMES = {
   library: { sky: ['#0b0806', '#2a1b0e', '#4a2f14', '#6a4a22'], wall: '#2e1e14', wall2: '#1a0f09', stone: '#3a281c', stoneD: '#22150f', edge: '#b08a4a', tint: ['rgba(200,140,50,0.4)', 'rgba(150,60,40,0.4)', 'rgba(120,150,70,0.3)'], stars: false },
   tower: { sky: ['#05060e', '#0f1430', '#1f2a5a', '#3a3f6a'], wall: '#1a1d33', wall2: '#0d0f1e', stone: '#262b44', stoneD: '#171a2c', edge: '#8a96c0', tint: ['rgba(90,110,200,0.45)', 'rgba(140,90,190,0.4)', 'rgba(70,150,190,0.4)'], stars: true },
   yokai: { sky: ['#07040f', '#150a2a', '#2a1245', '#4a2468'], wall: '#1e1230', wall2: '#0e0818', stone: '#2a1d3a', stoneD: '#150e22', edge: '#a888d8', tint: ['rgba(150,90,230,0.5)', 'rgba(220,70,110,0.4)', 'rgba(80,140,230,0.4)'], stars: true },
-  frost: { sky: ['#2f78cc', '#5aa6e8', '#9cd0f4', '#e6f4fd'], wall: '#9dbddc', wall2: '#6a90b4', far: '#b4cfe8', pine: '#2a4e52', stone: '#8f959b', stoneD: '#4e5560', edge: '#ffffff', tint: ['rgba(255,255,255,0.2)', 'rgba(200,230,255,0.2)', 'rgba(255,245,220,0.2)'], stars: false, snow: 1, sun: true },
+  frost: { sky: ['#3d6aa0', '#86a9cc', '#cdd0cf', '#f4e2c4'], wall: '#8aa3be', wall2: '#5f7c9a', far: '#9fb4cc', pine: '#0f2226', stone: '#8f959b', stoneD: '#4e5560', edge: '#ffffff', tint: ['rgba(255,255,255,0.2)', 'rgba(200,230,255,0.2)', 'rgba(255,245,220,0.2)'], stars: false, snow: 1, sun: true },
   ice: { sky: ['#04101a', '#0a2434', '#12445a', '#1d6478'], wall: '#12394d', wall2: '#0a2433', stone: '#3f7088', stoneD: '#254a5e', edge: '#c4ecf8', tint: ['rgba(90,220,240,0.4)', 'rgba(120,180,255,0.4)', 'rgba(160,240,230,0.3)'], stars: false, snow: 2 },
   drake: { sky: ['#0d0405', '#2a0d10', '#5a1a14', '#a8421f'], wall: '#2b1214', wall2: '#150708', stone: '#4c3b44', stoneD: '#2a1f26', edge: '#ff9a5a', tint: ['rgba(255,110,40,0.5)', 'rgba(220,50,40,0.45)', 'rgba(120,180,230,0.3)'], stars: false, snow: 3 },
   sanctum: { sky: ['#120506', '#3a0f12', '#6a1a1a', '#8a2a20'], wall: '#2f1315', wall2: '#1a0809', stone: '#3a1a1c', stoneD: '#220e10', edge: '#c0604e', tint: ['rgba(200,60,60,0.5)', 'rgba(220,120,60,0.45)', 'rgba(160,40,90,0.45)'], stars: false }
@@ -3498,12 +3498,23 @@ class Component extends DCLogic {
     ridge(0.06, 190, hz - 60, th.far || '#35546f', 'rgba(255,255,255,0.9)', 1.3);
     ridge(0.14, 140, hz - 20, th.wall, 'rgba(255,255,255,0.8)', 4.1);
     ridge(0.3, 70, hz + 20, th.wall2, null, 7.7);
-    const sh = cx * 0.45, bw = 70, i0 = Math.floor(sh / bw) - 1;
+    const mist = (y0, y1, a) => { const mg = c.createLinearGradient(0, y0, 0, y1); mg.addColorStop(0, 'rgba(235,225,210,0)'); mg.addColorStop(0.5, th.sun ? 'rgba(255,238,214,' + a + ')' : 'rgba(180,200,220,' + a + ')'); mg.addColorStop(1, 'rgba(235,225,210,0)'); c.fillStyle = mg; c.fillRect(0, y0, VW, y1 - y0); };
+    mist(hz - 70, hz + 10, 0.32);
+    const sh = cx * 0.45, bw = 62, i0 = Math.floor(sh / bw) - 1;
     for (let i = i0; i < i0 + Math.ceil(VW / bw) + 3; i++) {
-      const x = i * bw - sh + 20 * Math.sin(i * 3.7), h = 100 + 40 * Math.abs(Math.sin(i * 5.3)), by = hz + 6;
-      c.fillStyle = th.pine || '#0c1824'; for (let j = 0; j < 4; j++) { const w = (h * 0.32) * (1 - j * 0.2), y = by - j * h * 0.22; c.beginPath(); c.moveTo(x - w, y); c.lineTo(x, y - h * 0.34); c.lineTo(x + w, y); c.closePath(); c.fill(); }
-      c.fillStyle = th.sun ? 'rgba(255,255,255,0.95)' : 'rgba(225,242,255,0.5)'; for (let j = 0; j < 4; j++) { const w = (h * 0.32) * (1 - j * 0.2), y = by - j * h * 0.22; c.beginPath(); c.moveTo(x - w * 0.5, y - h * 0.17); c.lineTo(x, y - h * 0.34); c.lineTo(x + w * 0.5, y - h * 0.17); c.closePath(); c.fill(); }
+      const hs = n => Math.abs(Math.sin(i * 12.9898 + n * 78.233)), x = i * bw - sh + 22 * Math.sin(i * 3.7), h = 96 + 54 * hs(1), by = hz + 8, tiers = 8;
+      const pg = c.createLinearGradient(0, by - h, 0, by); pg.addColorStop(0, th.pine || '#0f2226'); pg.addColorStop(1, '#050b0e');
+      c.fillStyle = pg; c.beginPath(); c.moveTo(x, by - h);
+      const L = [], Rr = [];
+      for (let j = 1; j <= tiers; j++) { const yy = by - h + (h * j) / tiers, w = (h * 0.30) * (j / tiers) * (0.8 + 0.4 * hs(j + 3)); L.push([x - w, yy + 3 + hs(j) * 4]); Rr.push([x + w * (0.85 + 0.3 * hs(j + 9)), yy + 3 + hs(j + 5) * 4]); }
+      L.forEach((q, j) => { c.lineTo(q[0] + 3, q[1] - 7); c.lineTo(q[0], q[1]); c.lineTo(x - (q[0] < x ? (x - q[0]) * 0.35 : 0), q[1] - 2); });
+      c.lineTo(x, by); c.lineTo(x, by);
+      for (let j = tiers - 1; j >= 0; j--) { const q = Rr[j]; c.lineTo(x + (q[0] - x) * 0.35, q[1] - 2); c.lineTo(q[0], q[1]); c.lineTo(q[0] - 3, q[1] - 7); }
+      c.closePath(); c.fill();
+      c.strokeStyle = th.sun ? 'rgba(255,248,235,0.55)' : 'rgba(215,235,250,0.35)'; c.lineWidth = 1.4; c.beginPath();
+      L.forEach((q, j) => { c.moveTo(q[0] + 3, q[1] - 7); c.lineTo(x - (x - q[0]) * 0.1, q[1] - 11 - j * 0.3); }); Rr.forEach((q, j) => { c.moveTo(q[0] - 3, q[1] - 7); c.lineTo(x + (q[0] - x) * 0.1, q[1] - 11 - j * 0.3); }); c.stroke();
     }
+    mist(hz - 18, hz + 46, 0.4);
   }
 
   terrainLayer(R, th) {
@@ -3542,7 +3553,7 @@ class Component extends DCLogic {
     // cracks and speckle
     k.strokeStyle = 'rgba(5,15,28,0.5)'; k.lineWidth = 1;
     for (let i = 0; i < W * H / 4200; i++) { let x = rnd() * W, y = rnd() * H; k.beginPath(); k.moveTo(x, y); for (let j = 0; j < 5; j++) { x += (rnd() - 0.5) * 14; y += 4 + rnd() * 9; k.lineTo(x, y); } k.stroke(); }
-    grain(k, 0, 0, W, H, Math.round(W * H / 200), 'rgba(0,0,0,0.3)', 0.8, 2); grain(k, 0, 0, W, H, Math.round(W * H / 300), 'rgba(230,240,250,0.22)', 0.7, 3);
+    for (let i = 0; i < W * H / 240; i++) { k.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.2)' : 'rgba(230,240,250,0.15)'; k.fillRect(rnd() * W, rnd() * H, 1.4, 1.4); }
     // ambient shade on faces that look left, glow on faces to the right
     for (let r = 0; r < R.h; r++) for (let c = 0; c < R.w; c++) {
       if (!sol(c, r) || (th.sun && r < 2)) continue;
@@ -3828,7 +3839,10 @@ class Component extends DCLogic {
       this.rect(d.x + 5, d.y + bob + 3, 4, 8, '#15100f');
     }
     // enemies
-    for (const e of cur.enemies) if (!e.dead) { if (e.gear === undefined && !e.pet) e.gear = this.rollGear(e); this.drawEnemy(c, e); this.drawGearTag(c, e); }
+    for (const e of cur.enemies) if (!e.dead && e.gear === undefined && !e.pet) e.gear = this.rollGear(e);
+    const GE = cur.enemies.filter(e => !e.dead && Array.isArray(e.gear) && e.gear.length);
+    for (const e of GE) { let n = 0; for (const o of GE) if (Math.abs(o.x - e.x) < 280) n++; e.dots = n >= 3; }
+    for (const e of cur.enemies) if (!e.dead) { this.drawEnemy(c, e); if (!e.dots) this.drawGearTag(c, e); }
     if (g.pet) this.drawPet(c);
     for (const e of []) {
       if (e.dead) continue;
@@ -3906,10 +3920,42 @@ class Component extends DCLogic {
     c.globalAlpha = 1;
     c.restore();
     if (th.sun) this.fall(c, th, cx, true);
+    this.postFx(c, th);
     this.drawMinimap(c);
     this.drawPortrait(c);
     this.drawBossBar(c);
     if (g.fade > 0) { c.fillStyle = 'rgba(0,0,0,' + Math.min(1, g.fade) + ')'; c.fillRect(0, 0, VW, VH); }
+  }
+
+  postFx(c, th) {
+    const g = this.g;
+    if (!this.fxPat) {
+      const k = document.createElement('canvas'); k.width = k.height = 128; const q = k.getContext('2d'), d = q.createImageData(128, 128);
+      for (let i = 0; i < d.data.length; i += 4) { const v = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+      q.putImageData(d, 0, 0); this.fxPat = c.createPattern(k, 'repeat');
+      this.bloomCv = document.createElement('canvas'); this.bloomCv.width = 200; this.bloomCv.height = 113;
+      this.gradCache = {};
+    }
+    // bloom: contrast-thresholded, blurred, downscaled copy added back
+    const bc = this.bloomCv.getContext('2d'); bc.globalCompositeOperation = 'copy'; bc.filter = 'contrast(1.9) brightness(0.8) blur(1.5px)'; bc.drawImage(this.canvas, 0, 0, 200, 113); bc.filter = 'none';
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'lighter'; c.globalAlpha = th.sun ? 0.38 : 0.3; c.drawImage(this.bloomCv, 0, 0, VW, VH);
+    // desaturate a little, then grade (cool shadows above, warm light below)
+    c.globalAlpha = 1; c.globalCompositeOperation = 'saturation'; c.fillStyle = 'rgba(128,128,128,' + (th.sun ? 0.12 : 0.14) + ')'; c.fillRect(0, 0, VW, VH);
+    c.globalCompositeOperation = 'multiply';
+    const gk = th.sun ? 's' : 'd'; let gg = this.gradCache[gk];
+    if (!gg) { gg = c.createLinearGradient(0, 0, 0, VH); if (th.sun) { gg.addColorStop(0, '#f0f4fc'); gg.addColorStop(1, '#fff6e6'); } else { gg.addColorStop(0, '#b9c0d8'); gg.addColorStop(1, '#e6c8b0'); } this.gradCache[gk] = gg; }
+    c.fillStyle = gg; c.fillRect(0, 0, VW, VH);
+    // painted grain
+    c.globalCompositeOperation = 'overlay'; c.globalAlpha = th.sun ? 0.06 : 0.1; c.save(); c.translate(Math.floor(Math.random() * 128), Math.floor(Math.random() * 128)); c.fillStyle = this.fxPat; c.fillRect(-128, -128, VW + 256, VH + 256); c.restore();
+    // vignette
+    c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+    let vg = this.gradCache.v; if (!vg) { vg = c.createRadialGradient(VW / 2, VH / 2, VH * 0.35, VW / 2, VH / 2, VW * 0.62); vg.addColorStop(0, 'rgba(6,3,10,0)'); vg.addColorStop(1, 'rgba(6,3,10,0.55)'); this.gradCache.v = vg; this.gradCache.vs = (() => { const q = c.createRadialGradient(VW / 2, VH / 2, VH * 0.45, VW / 2, VH / 2, VW * 0.66); q.addColorStop(0, 'rgba(20,10,10,0)'); q.addColorStop(1, 'rgba(20,10,10,0.32)'); return q; })(); }
+    c.fillStyle = th.sun ? this.gradCache.vs : vg; c.fillRect(0, 0, VW, VH);
+    // drifting motes of light
+    c.globalCompositeOperation = 'lighter';
+    const mc = th.snow ? (th.sun ? '255,236,190' : '150,230,255') : (th.stars ? '190,170,255' : '255,170,90');
+    for (let i = 0; i < 26; i++) { const x = ((i * 97 + g.t * (5 + (i % 5) * 3)) % (VW + 40)) - 20, y = (i * 53) % VH + Math.sin(g.t * 0.8 + i) * 14, a = 0.25 + 0.25 * Math.sin(g.t * 1.6 + i * 2); c.fillStyle = 'rgba(' + mc + ',' + a + ')'; c.beginPath(); c.arc(x, y, 1 + (i % 3) * 0.6, 0, 7); c.fill(); }
+    c.restore();
   }
 
   drawMinimap(c) {
@@ -4314,6 +4360,16 @@ class Component extends DCLogic {
 
   drawGear(c, e, t) {
     const G = e.gear, sc = e.sc || 1, W = e.w / sc, H = e.h / sc, u = Math.min(W, H) * 0.5;
+    if (e.dots) {
+      const n = Math.min(G.length, 4), k = 1 / sc;
+      for (let i = 0; i < n; i++) {
+        const it = G[i], col = rcOf(it).c, x = (i - (n - 1) / 2) * 7 * k, y = -H - 9 * k + Math.sin(t * 3 + i) * 1.2;
+        glow(c, x, y, (it.r >= 4 ? 9 : 6) * k, hexA(col, it.r >= 4 ? 0.55 : 0.4));
+        c.fillStyle = col; c.beginPath(); c.arc(x, y, 2.4 * k, 0, 7); c.fill();
+        if (it.r >= 4) { c.fillStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.arc(x, y, 1 * k, 0, 7); c.fill(); }
+      }
+      return;
+    }
     const HD = { frostwolf: [0.5, -0.55], spider: [0.3, -0.6], bat: [0.1, -0.55], harpy: [0.1, -0.6], wyrmling: [0.25, -0.6], dragon: [0.3, -0.8] }[e.t] || [0.04, -0.9];
     const CH = { frostwolf: [0.05, -0.5], spider: [0, -0.4], dragon: [0, -0.5] }[e.t] || [0.02, -0.55];
     const place = (fn, x, y, sz, rot, al) => { c.save(); c.translate(x, y); c.rotate(rot || 0); c.scale(sz / 100, sz / 100); c.translate(-50, -50); c.globalAlpha = al; fn(); c.restore(); };
@@ -4515,8 +4571,11 @@ class Component extends DCLogic {
     grain(c, -50, -75, 100, 60, 160, 'rgba(0,0,0,0.3)', 0.7, 3); grain(c, -50, -75, 100, 40, 90, 'rgba(255,190,120,0.28)', 0.6, 6);
     if (f === 0) { for (const q of [[-30, -70, 20], [-4, -76, 24], [22, -68, 16]]) poly(c, [[q[0], q[1] + 8], [q[0] + q[2] * 0.3, q[1] - 6], [q[0] + q[2] * 0.7, q[1] - 3], [q[0] + q[2], q[1] + 8]], 'rgba(205,238,255,0.8)'); }
     if (f === 2) { c.strokeStyle = 'rgba(255,170,60,0.95)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-34, -62); c.lineTo(-22, -52); c.lineTo(-28, -40); c.lineTo(-12, -30); c.moveTo(14, -70); c.lineTo(6, -56); c.lineTo(18, -46); c.lineTo(10, -34); c.moveTo(34, -60); c.lineTo(28, -48); c.lineTo(38, -40); c.stroke(); glow(c, 0, -46, 54, 'rgba(255,90,30,0.28)'); }
+    { const ca = [0.35, 0.6, 0.95][f] * (0.8 + 0.2 * Math.sin(t * 3)); c.strokeStyle = 'rgba(255,100,28,' + ca + ')'; c.lineWidth = 1.7; c.lineJoin = 'round';
+      for (const cr of [[-40, -56, -30, -50, -34, -42, -22, -36], [-8, -70, -14, -60, -4, -52, -10, -42], [20, -66, 14, -56, 24, -48, 18, -38], [38, -58, 32, -50, 40, -44]]) { c.beginPath(); c.moveTo(cr[0], cr[1]); for (let i = 2; i < cr.length; i += 2) c.lineTo(cr[i], cr[i + 1]); c.stroke(); }
+      glow(c, -4, -46, 38, 'rgba(255,80,20,' + (0.12 * ca) + ')'); }
     c.restore();
-    for (let i = 0; i < 11; i++) { const x = -44 + i * 8.8, yy = -44 - 30 * Math.sqrt(Math.max(0, 1 - (x / 54) ** 2)), h2 = 9 + (f === 2 ? 7 : 0) + (i % 2) * 4; poly(c, [[x - 4, yy + 2], [x + 0.5 - 2, yy - h2], [x + 5, yy + 2]], f === 2 ? '#1a0406' : loC); }
+    for (let i = 0; i < 11; i++) { const x = -44 + i * 8.8, yy = -44 - 30 * Math.sqrt(Math.max(0, 1 - (x / 54) ** 2)), h2 = 14 + (f === 2 ? 8 : 0) + (i % 2) * 6; poly(c, [[x - 4, yy + 2], [x + 0.5 - 2, yy - h2], [x + 5, yy + 2]], f === 2 ? '#1a0406' : loC); }
     // neck and head
     const hx0 = 84 + (rear ? -12 : 0) + (lunge ? 16 : 0), hy0 = -86 + (rear ? -8 : 0) + (lunge ? 8 : 0) + sway * 1.5;
     for (let i = 0; i < 6; i++) { const u0 = i / 6, u1 = (i + 1) / 6, q = u => [lerp(32, hx0 - 8, u), lerp(-58, hy0 + 4, u) + Math.sin(u * 3.1) * -8]; const A = q(u0), B = q(u1); limb(c, A[0], A[1], B[0], B[1], 28 - i * 3, 28 - (i + 1) * 3, hiC, loC); }
@@ -4533,6 +4592,14 @@ class Component extends DCLogic {
     poly(c, [[2, -10], [18, -13], [30, -9], [16, -8]], loC);
     c.fillStyle = '#1a0504'; c.beginPath(); c.ellipse(40, -4, 2.2, 1.4, 0.2, 0, 7); c.fill();
     c.fillStyle = f === 2 ? '#e8d8b8' : '#d8a028'; c.beginPath(); c.ellipse(12, -5, 3.8, 2.5, 0.15, 0, 7); c.fill(); c.fillStyle = '#120000'; c.fillRect(11.4, -7.2, 1.5, 4.6); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(9.6, -6.4, 1.2, 1.2);
+    glow(c, 12, -5, 11 + Math.sin(t * 6) * 1.5, f === 2 ? 'rgba(255,230,120,0.8)' : 'rgba(255,60,20,0.8)');
+    c.fillStyle = f === 2 ? '#fff3b0' : '#ff6a14'; c.beginPath(); c.ellipse(12, -5, 3.8, 2.3, 0.25, 0, 7); c.fill();
+    c.fillStyle = '#100000'; c.fillRect(11.3, -7.4, 1.6, 4.8);
+    poly(c, [[2, -11], [26, -13.5], [20, -5.5], [10, -8]], '#1c0605'); poly(c, [[6, -13], [28, -16], [23, -12]], hiC);
+    poly(c, [[8, -12], [9, -25], [16, -12]], '#e8dcc4'); poly(c, [[-6, 0], [-18, 8], [-32, 5], [-12, -4]], '#c8b894'); poly(c, [[2, 3], [-5, 15], [-16, 17], [-2, 4]], '#a89a78');
+    c.strokeStyle = 'rgba(235,205,175,0.6)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(20, -9); c.lineTo(32, 2); c.moveTo(23, -10); c.lineTo(35, 0); c.stroke();
+    poly(c, [[34, 5], [36, 16], [38.5, 5]], '#f6f0e0'); poly(c, [[26, 5], [27.5, 13], [29.5, 5]], '#f6f0e0');
+    for (let i = 0; i < 3; i++) { const u2 = (t * 0.9 + i * 0.34) % 1; c.fillStyle = 'rgba(90,76,76,' + (0.5 * (1 - u2)) + ')'; c.beginPath(); c.arc(43 + u2 * 8, -4 - u2 * 14, 2 + u2 * 4, 0, 7); c.fill(); }
     if (open) { const mg = 1 + 0.3 * Math.sin(t * 25); glow(c, 44, 8, (st === 'act' && k === 'breath' ? 40 : 26) * mg, 'rgba(255,150,40,0.9)'); }
     c.restore();
     // front leg
