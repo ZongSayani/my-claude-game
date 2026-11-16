@@ -2442,7 +2442,7 @@ class Component extends DCLogic {
   wtype() { const w = this.g.hero.equip.weapon; return WT[(w && w.wt) || 'sword']; }
 
   // Stronger enemies (type rank, room tier, cycle) roll higher item level and better rarity.
-  dropLoot(e) {
+  rollGear(e) {
     const g = this.g, h = g.hero, R = this.cur.R;
     const RK = { ghoul: 0, bat: 0, spider: 0.3, skel: 0.6, wraith: 1.2, gargoyle: 1.6, revenant: 2, warden: 4, saint: 6, nura: 9, frostwolf: 1.4, harpy: 1.6, yeti: 2.4, draugr: 1.8, wyrmling: 2.2, dragon: 10 };
     const rank = (RK[e.t] || 0) + (e.elite ? 2.2 : 0), boss = e.t === 'warden' || e.t === 'saint' || e.t === 'nura' || e.t === 'dragon';
@@ -2460,6 +2460,11 @@ class Component extends DCLogic {
     // set pieces: rare drops
     const sc = (boss ? { warden: 0.08, saint: 0.18, nura: 0.25, dragon: 0.25 }[e.t] || 0.2 : e.elite ? 0.045 : 0.004 + rank * 0.0012) * (1 + S.mf / 100);
     if (Math.random() < sc) drops.push(rollSetItem(ilvl));
+    return drops;
+  }
+
+  dropLoot(e) {
+    const drops = e.gear || this.rollGear(e); e.gear = null;
     drops.forEach((it, i) => this.dropItem(e.x + e.w / 2 + (i - drops.length / 2) * 14, e.y, it));
     if (drops.some(it => it.r >= 4)) this.toast('A ' + (drops.find(it => it.r >= 4).unique ? 'legendary relic' : 'legendary item') + ' glints among the spoils!', '#ffb454');
     else if (drops.some(it => it.r === 5)) this.toast('A set piece drops: ' + drops.find(it => it.r === 5).name + '!', '#4fe3b0');
@@ -3551,7 +3556,7 @@ class Component extends DCLogic {
       const c = Math.floor(x / T);
       for (let r = th.sun ? 2 : 0; r < R.h; r++) {
         const t = B[r][c]; if (!rock(t)) continue;
-        if (t === '#') { if (!sol(c, r - 1) || B[r - 1][c] === '/' || B[r - 1][c] === '\\') { return r * T; } continue; }
+        if (t === '#') { if (!sol(c, r - 1) || (r > 0 && (B[r - 1][c] === '/' || B[r - 1][c] === '\\'))) { return r * T; } continue; }
         const u = x - c * T; return t === '/' ? r * T + T - u : r * T + u;
       }
       return null;
@@ -3823,7 +3828,7 @@ class Component extends DCLogic {
       this.rect(d.x + 5, d.y + bob + 3, 4, 8, '#15100f');
     }
     // enemies
-    for (const e of cur.enemies) if (!e.dead) this.drawEnemy(c, e);
+    for (const e of cur.enemies) if (!e.dead) { if (e.gear === undefined && !e.pet) e.gear = this.rollGear(e); this.drawEnemy(c, e); this.drawGearTag(c, e); }
     if (g.pet) this.drawPet(c);
     for (const e of []) {
       if (e.dead) continue;
@@ -4301,9 +4306,43 @@ class Component extends DCLogic {
       case 'draugr': this.artDraugr(c, e, t); break;
       case 'dragon': this.artDragon(c, e, t); break;
     }
+    if (Array.isArray(e.gear) && e.gear.length) this.drawGear(c, e, t);
     c.filter = 'none'; c.restore();
     this.drawStatus(c, e);
     if (!e.elite && !e.pet && e.hp < e.mhp && e.t !== 'saint' && e.t !== 'warden' && e.t !== 'nura' && e.t !== 'dragon') { this.rect(e.x, e.y - 8, e.w, 3, 'rgba(0,0,0,0.6)'); this.rect(e.x, e.y - 8, e.w * Math.max(0, e.hp / e.mhp), 3, '#c4303c'); }
+  }
+
+  drawGear(c, e, t) {
+    const G = e.gear, sc = e.sc || 1, W = e.w / sc, H = e.h / sc, u = Math.min(W, H) * 0.5;
+    const HD = { frostwolf: [0.5, -0.55], spider: [0.3, -0.6], bat: [0.1, -0.55], harpy: [0.1, -0.6], wyrmling: [0.25, -0.6], dragon: [0.3, -0.8] }[e.t] || [0.04, -0.9];
+    const CH = { frostwolf: [0.05, -0.5], spider: [0, -0.4], dragon: [0, -0.5] }[e.t] || [0.02, -0.55];
+    const place = (fn, x, y, sz, rot, al) => { c.save(); c.translate(x, y); c.rotate(rot || 0); c.scale(sz / 100, sz / 100); c.translate(-50, -50); c.globalAlpha = al; fn(); c.restore(); };
+    for (let i = 0; i < G.length && i < 4; i++) {
+      const it = G[i], V = visOf(it), rc = V ? V.c : RAR[it.r].c, rd = V ? V.d : RAR[it.r].d, tr = Math.max(0, Math.min(4, it.tier || 0)), bob = Math.sin(t * 3 + i) * 0.8;
+      let x = 0, y = 0;
+      if (it.slot === 'helm') { x = HD[0] * W; y = HD[1] * H - u * 0.35 + bob; place(() => icHelm(c, tr, rc, rd), x, y, u * 0.85, 0, 0.95); }
+      else if (it.slot === 'armor') { x = CH[0] * W; y = CH[1] * H; place(() => icArmor(c, tr, rc, rd), x, y, u * 1.25, 0, 0.78); }
+      else if (it.slot === 'weapon') { x = 0.42 * W; y = -0.42 * H + bob; place(() => icWeapon(c, it.wt || 'sword', tr, rc, rd), x, y, u * 1.5, 0.35, 0.95); }
+      else if (it.slot === 'shield') { x = -0.2 * W; y = -0.42 * H; place(() => icShield(c, tr, rc, rd), x, y, u * 1.0, -0.15, 0.9); }
+      else if (it.slot === 'gloves') { x = 0.36 * W; y = -0.28 * H; place(() => icGloves(c, tr, rc, rd), x, y, u * 0.6, 0, 0.95); }
+      else if (it.slot === 'boots') { x = 0.12 * W; y = -u * 0.2; place(() => icBoots(c, tr, rc, rd), x, y, u * 0.6, 0, 0.95); place(() => icBoots(c, tr, rc, rd), x - 0.28 * W, y, u * 0.6, 0, 0.8); }
+      else if (it.slot === 'belt') { x = 0; y = -0.34 * H; place(() => icBelt(c, tr, rc, rd), x, y, u * 0.9, 0, 0.9); }
+      else if (it.slot === 'amulet') { x = CH[0] * W + 0.1 * W; y = CH[1] * H - u * 0.2; place(() => icAmulet(c, tr, rc, rd), x, y, u * 0.5, 0, 0.95); }
+      else { x = 0.34 * W; y = -0.55 * H; place(() => icRing(c, tr, rc, rd), x, y, u * 0.38, 0, 0.95); }
+      if (it.r >= 3) {
+        const col = rc; glow(c, x, y, u * (it.r >= 4 ? 0.9 : 0.6), hexA(col, it.r >= 4 ? 0.34 : 0.2));
+        const n = it.r >= 4 ? 3 : 1;
+        for (let k = 0; k < n; k++) { const a = t * 2.2 + k * 2.1 + i; fxShape(c, V ? V.a : 'star', x + Math.cos(a) * u * 0.55, y + Math.sin(a) * u * 0.4, 2.6, col, 0.85); }
+      }
+    }
+  }
+  drawGearTag(c, e) {
+    const G = e.gear; if (!Array.isArray(G) || !G.length || e.dead) return;
+    const p = this.g.p, cx = e.x + e.w / 2; if (Math.abs(p.x + 11 - cx) > 300) return;
+    const best = G.filter(it => it.r >= 4).sort((a, b) => b.r - a.r)[0] || G.find(it => it.r === 5); if (!best) return;
+    const top = e.y - (e.elite ? 32 : 20) - (e.t === 'dragon' || e.t === 'nura' || e.t === 'saint' || e.t === 'warden' ? 0 : 0);
+    c.save(); c.font = '700 10px "Pixelify Sans", monospace'; c.textAlign = 'center'; c.lineWidth = 3; c.lineJoin = 'round';
+    const s = '\u2605 ' + best.name, col = rcOf(best).c; c.strokeStyle = '#0d0809'; c.strokeText(s, cx, top); c.fillStyle = col; c.fillText(s, cx, top); c.restore();
   }
 
   artFrostwolf(c, e, t) {
