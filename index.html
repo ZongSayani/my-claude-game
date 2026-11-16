@@ -123,10 +123,19 @@ body{margin:0;background:#0b0809}
 </sc-if>
 
 <sc-if value="{{ isClear }}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(11,8,9,0.86)">
-<div style="width: 480px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center">
-<div style="font-size: 38px; font-weight: 700; color: #9ad0b5; line-height: 1.1">The Weeping Saint has fallen</div>
-<div style="font-size: 16px; color: #e4d8c4; line-height: 1.5">Cycle {{ stage }} complete · Level {{ level }} · {{ gold }} gold.<br>The cathedral rebuilds itself, with tougher horrors and better relics.</div>
+<div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(11,8,9,0.92)">
+<div style="width: 600px; max-height: 420px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+<div style="font-size: 30px; font-weight: 700; color: #9ad0b5; line-height: 1.1">The Red Dragon has fallen</div>
+<div style="display: flex; gap: 28px; align-items: center; justify-content: center">
+<div style="font-size: 54px; font-weight: 700; color: #ffd166; line-height: 1">{{ clearGrade }}</div>
+<div style="text-align: left"><div style="font-size: 12px; color: #a89a8c">FINAL SCORE</div><div style="font-size: 30px; font-weight: 700; color: #ffd166; line-height: 1">{{ clearScore }}</div></div>
+<div style="text-align: left"><div style="font-size: 12px; color: #a89a8c">CLEAR TIME · CYCLE {{ clearCycle }}</div><div style="font-size: 24px; font-weight: 700; color: #e4d8c4; line-height: 1.1">{{ clearTime }}</div><div style="font-size: 12px; color: #a89a8c">total {{ clearTotalTime }}</div></div>
+</div>
+<div style="width: 100%; flex: 1; min-height: 0; max-height: 236px; overflow-y: auto; border: 2px solid #4a2a2a; background: #110c0b; padding: 8px 12px; text-align: left">
+<sc-for list="{{ clearLines }}" as="l" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; padding: 3px 0; border-bottom: 1px solid #2a1c1a"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 14px; line-height: 1.25"><span style="color: {{ l.col }}">{{ l.l }}</span><span style="color: #ffd166; font-weight: 700">{{ l.v }}</span></div><div style="font-size: 11px; color: #8a7d70; line-height: 1.2">{{ l.sub }}</div></div>
+</sc-for>
+</div>
 <button class="lr-btn lr-primary" onClick="{{ primary }}">Begin a harder cycle</button>
 </div>
 </div>
@@ -940,18 +949,21 @@ function icBelt(c, t, rc, rd) {
 const ICDATA = {};
 function itemImg(slot, it, RARX) {
   const t = it ? Math.max(0, Math.min(4, it.tier || 0)) : 0, r = it ? it.r : 0, wt = (slot === 'weapon') ? (it && it.wt ? it.wt : 'sword') : '';
-  const key = slot + '|' + wt + '|' + t + '|' + r + '|' + (it ? 1 : 0);
+  const V = it ? visOf(it) : null;
+  const key = slot + '|' + wt + '|' + t + '|' + r + '|' + (it ? 1 : 0) + (V ? '|' + V.c + V.a : '');
   if (ICDATA[key]) return ICDATA[key];
   if (typeof document === 'undefined') return '';
   const S = 112, cv = document.createElement('canvas'); cv.width = S * 2; cv.height = S * 2; const c = cv.getContext('2d');
   c.scale(S * 2 / 100, S * 2 / 100);
-  const rc = it ? RARX[r].c : '#6a5a4c', rd = it ? RARX[r].d : '#3a2a28';
+  const rc = V ? V.c : it ? RARX[r].c : '#6a5a4c', rd = V ? V.d : it ? RARX[r].d : '#3a2a28';
+  if (V) { const gg = c.createRadialGradient(50, 50, 8, 50, 50, 62); gg.addColorStop(0, hexA(V.c, 0.34)); gg.addColorStop(1, hexA(V.c, 0)); c.fillStyle = gg; c.fillRect(0, 0, 100, 100); }
   c.save();
   if (it) { c.shadowColor = 'rgba(0,0,0,0.7)'; c.shadowBlur = 6; c.shadowOffsetY = 2; }
   else c.globalAlpha = 0.28;
   if (slot === 'weapon') icWeapon(c, wt, t, rc, rd); else if (slot === 'armor') icArmor(c, t, rc, rd); else if (slot === 'helm') icHelm(c, t, rc, rd); else if (slot === 'shield') icShield(c, t, rc, rd);
   else if (slot === 'gloves') icGloves(c, t, rc, rd); else if (slot === 'boots') icBoots(c, t, rc, rd); else if (slot === 'ring') icRing(c, t, rc, rd); else if (slot === 'amulet') icAmulet(c, t, rc, rd); else icBelt(c, t, rc, rd);
   c.restore();
+  if (V) { fxShape(c, V.a, 85, 15, 9, V.c, 0.95); fxShape(c, V.a, 15, 85, 5, V.c, 0.6); }
   if (!it) { c.globalCompositeOperation = 'source-atop'; c.fillStyle = '#7a6a5c'; c.fillRect(0, 0, 100, 100); }
   return (ICDATA[key] = cv.toDataURL('image/png'));
 }
@@ -1210,7 +1222,49 @@ const SETS = [
   { id: 'crimson', n: 'Crimson Sovereign', lv: 10, p: { weapon: ['Sovereign Edge', 'greatsword'], armor: 'Sovereign Cuirass', helm: 'Sovereign Crown', boots: 'Sovereign Greaves', belt: 'Sovereign Belt', ring: 'Sovereign Signet' }, fav: ['atk', 'life', 'crit'], b: { 2: { atk: 8, hp: 30 }, 3: { life: 4, crit: 4 }, 4: { atk: 10, cdd: 25 }, 6: { atk: 14, life: 6, res: 8 } } },
   { id: 'glacial', n: 'Glacial Vanguard', lv: 12, p: { shield: 'Glacial Aegis', helm: 'Glacial Helm', armor: 'Glacial Hauberk', boots: 'Glacial Stompers', gloves: 'Glacial Fists' }, fav: ['def', 'res', 'hp', 'blk'], b: { 2: { def: 8, hp: 40 }, 3: { res: 8, blk: 6 }, 5: { res: 10, def: 12, hp: 60, regen: 1.5 } } },
   { id: 'wyrmbane', n: 'Wyrmbane', lv: 15, p: { weapon: ['Wyrmbane Pike', 'spear'], helm: 'Wyrmbane Visage', armor: 'Wyrmbane Scale', gloves: 'Wyrmbane Talons', amulet: 'Wyrmbane Heart', ring: 'Wyrmbane Eye' }, fav: ['atk', 'crit', 'cdd', 'life'], b: { 2: { atk: 10, crit: 4 }, 3: { cdd: 25, life: 4 }, 4: { atk: 14, res: 8, mf: 15 }, 6: { atk: 18, crit: 8, cdd: 40, life: 6 } } },
-  { id: 'hollowking', n: 'Raiment of the Hollow King', lv: 17, p: { weapon: ['Hollow Reaper', 'scythe'], shield: 'Hollow Bulwark', helm: 'Hollow Crown', armor: 'Hollow Mantle', gloves: 'Hollow Grasp', boots: 'Hollow Steps', belt: 'Hollow Girdle' }, fav: ['atk', 'def', 'hp', 'crit', 'life'], b: { 2: { atk: 12, def: 8 }, 3: { hp: 80, regen: 2 }, 4: { crit: 6, cdd: 30, res: 8 }, 5: { life: 6, cdr: 10, xpb: 10 }, 7: { atk: 25, def: 15, res: 12, hp: 120, mf: 25 } } }
+  { id: 'hollowking', n: 'Raiment of the Hollow King', lv: 17, p: { weapon: ['Hollow Reaper', 'scythe'], shield: 'Hollow Bulwark', helm: 'Hollow Crown', armor: 'Hollow Mantle', gloves: 'Hollow Grasp', boots: 'Hollow Steps', belt: 'Hollow Girdle' }, fav: ['atk', 'def', 'hp', 'crit', 'life'], b: { 2: { atk: 12, def: 8 }, 3: { hp: 80, regen: 2 }, 4: { crit: 6, cdd: 30, res: 8 }, 5: { life: 6, cdr: 10, xpb: 10 }, 7: { atk: 25, def: 15, res: 12, hp: 120, mf: 25 } } },
+  { id: 'gravedigger2', n: 'Gravedigger\'s Toil', lv: 2, p: { weapon: ['Gravedigger Maul', 'mace'], helm: 'Gravedigger Skull', armor: 'Gravedigger Ribcage', gloves: 'Gravedigger Knuckles' }, fav: ['hp', 'def', 'regen', 'xpb'], b: { 2: { hp: 16, def: 3 }, 4: { hp: 46, def: 8, regen: 1.4, xpb: 10 } } },
+  { id: 'acolyte3', n: 'Candle Acolyte', lv: 3, p: { helm: 'Acolyte Circlet', armor: 'Acolyte Vestments', gloves: 'Acolyte Mitts', amulet: 'Acolyte Talisman' }, fav: ['mp', 'cdr', 'mpr'], b: { 2: { mp: 9, cdr: 3 }, 4: { mp: 25, cdr: 7, mpr: 7, atk: 10 } } },
+  { id: 'ratcatcher4', n: 'Ratcatcher\'s Guile', lv: 4, p: { weapon: ['Ratcatcher Stiletto', 'dagger'], gloves: 'Ratcatcher Grips', boots: 'Ratcatcher Boots', belt: 'Ratcatcher Sash', ring: 'Ratcatcher Loop' }, fav: ['crit', 'spd', 'gf'], b: { 2: { crit: 2, spd: 3 }, 3: { spd: 6, gf: 8 }, 5: { crit: 6, spd: 13, gf: 16, atk: 11 } } },
+  { id: 'keeper5', n: 'Crypt Keeper', lv: 5, p: { weapon: ['Keeper Reaper', 'scythe'], helm: 'Keeper Crown', armor: 'Keeper Cage', boots: 'Keeper Steps', belt: 'Keeper Girdle' }, fav: ['life', 'regen', 'res'], b: { 2: { life: 1, regen: 0.4 }, 3: { regen: 0.9, res: 4 }, 5: { life: 5, regen: 1.5, res: 8, atk: 13 } } },
+  { id: 'bogwalker5', n: 'Bog Wanderer', lv: 5, p: { weapon: ['Bogwalker Lance', 'spear'], armor: 'Bogwalker Jerkin', boots: 'Bogwalker Boots', belt: 'Bogwalker Sash' }, fav: ['spd', 'hp', 'res'], b: { 2: { spd: 4, hp: 18 }, 4: { spd: 12, hp: 48, res: 8, atk: 11 } } },
+  { id: 'penitent6', n: 'Iron Penitent', lv: 6, p: { weapon: ['Penitent Edge', 'sword'], shield: 'Penitent Aegis', helm: 'Penitent Greathelm', armor: 'Penitent Cuirass', gloves: 'Penitent Fists', boots: 'Penitent Sabatons' }, fav: ['def', 'blk', 'hp'], b: { 2: { def: 3, blk: 3 }, 4: { blk: 6, hp: 27 }, 6: { def: 10, blk: 10, hp: 51, atk: 12 } } },
+  { id: 'gargoyle7', n: 'Gargoyle Heart', lv: 7, p: { weapon: ['Gargoyle Cleaver', 'axe'], helm: 'Gargoyle Visage', armor: 'Gargoyle Hauberk', gloves: 'Gargoyle Talons', boots: 'Gargoyle Stompers' }, fav: ['def', 'res', 'hp'], b: { 2: { def: 3, res: 2 }, 3: { res: 4, hp: 29 }, 5: { def: 11, res: 9, hp: 55, atk: 12 } } },
+  { id: 'plaguebearer7', n: 'Plague Doctor', lv: 7, p: { helm: 'Plaguebearer Circlet', armor: 'Plaguebearer Vestments', gloves: 'Plaguebearer Mitts', amulet: 'Plaguebearer Pendant', ring: 'Plaguebearer Seal' }, fav: ['drt', 'crit', 'mp'], b: { 2: { drt: 6, crit: 2 }, 3: { crit: 3, mp: 18 }, 5: { drt: 20, crit: 6, mp: 29, atk: 13 } } },
+  { id: 'vesper8', n: 'Vesper Choir', lv: 8, p: { helm: 'Vesper Cowl', armor: 'Vesper Robe', amulet: 'Vesper Charm', ring: 'Vesper Signet', belt: 'Vesper Cord' }, fav: ['mp', 'lit', 'mpr'], b: { 2: { mp: 9, lit: 6 }, 3: { lit: 13, mpr: 5 }, 5: { mp: 34, lit: 22, mpr: 9, atk: 13 } } },
+  { id: 'widow8', n: 'Mourning Widow', lv: 8, p: { weapon: ['Widow Fang', 'dagger'], helm: 'Widow Cap', gloves: 'Widow Gloves', ring: 'Widow Band', amulet: 'Widow Talisman' }, fav: ['crit', 'cdd', 'life'], b: { 2: { crit: 2, cdd: 10 }, 3: { cdd: 18, life: 3 }, 5: { crit: 6, cdd: 34, life: 6, atk: 14 } } },
+  { id: 'bloodhound9', n: 'Bloodhound Pack', lv: 9, p: { weapon: ['Bloodhound Brand', 'sword'], helm: 'Bloodhound Hood', gloves: 'Bloodhound Grips', boots: 'Bloodhound Boots', belt: 'Bloodhound Sash' }, fav: ['atk', 'life', 'spd'], b: { 2: { atk: 4, life: 1 }, 3: { life: 3, spd: 8 }, 5: { atk: 12, life: 6, spd: 13, hp: 52 } } },
+  { id: 'lantern9', n: 'Lantern Warden', lv: 9, p: { weapon: ['Lantern Flail', 'mace'], shield: 'Lantern Aegis', helm: 'Lantern Greathelm', armor: 'Lantern Cuirass' }, fav: ['def', 'blk', 'mf'], b: { 2: { def: 4, blk: 4 }, 4: { def: 10, blk: 11, mf: 22, atk: 14 } } },
+  { id: 'cinder10', n: 'Ember Vow', lv: 10, p: { weapon: ['Cinder Claymore', 'greatsword'], helm: 'Cinder Visage', armor: 'Cinder Hauberk', gloves: 'Cinder Talons', ring: 'Cinder Signet' }, fav: ['atk', 'cdd', 'crit'], b: { 2: { atk: 3, cdd: 9 }, 3: { cdd: 19, crit: 4 }, 5: { atk: 15, cdd: 37, crit: 7, hp: 57 } } },
+  { id: 'marrowbane10', n: 'Marrow Hunter', lv: 10, p: { weapon: ['Marrowbane Lance', 'spear'], helm: 'Marrowbane Crown', armor: 'Marrowbane Cage', amulet: 'Marrowbane Talisman', ring: 'Marrowbane Band' }, fav: ['atk', 'crit', 'mf'], b: { 2: { atk: 4, crit: 2 }, 3: { crit: 4, mf: 12 }, 5: { atk: 13, crit: 7, mf: 22, hp: 58 } } },
+  { id: 'moonlit11', n: 'Moonlit Duelist', lv: 11, p: { weapon: ['Moonlit Thorn', 'rapier'], helm: 'Moonlit Cowl', armor: 'Moonlit Robe', boots: 'Moonlit Slippers', gloves: 'Moonlit Wraps' }, fav: ['crit', 'spd', 'cdd'], b: { 2: { crit: 2, spd: 4 }, 3: { spd: 7, cdd: 19 }, 5: { crit: 7, spd: 14, cdd: 39, atk: 15 } } },
+  { id: 'thornwood11', n: 'Thorn Regent', lv: 11, p: { weapon: ['Thornwood Pike', 'spear'], armor: 'Thornwood Vest', gloves: 'Thornwood Gloves', boots: 'Thornwood Treads', belt: 'Thornwood Belt', amulet: 'Thornwood Pendant' }, fav: ['regen', 'res', 'hp'], b: { 2: { regen: 0.5, res: 3 }, 4: { res: 5, hp: 30 }, 6: { regen: 2.1, res: 10, hp: 64, atk: 15 } } },
+  { id: 'rimeguard12', n: 'Rimeguard', lv: 12, p: { shield: 'Rimeguard Bulwark', helm: 'Rimeguard Helm', armor: 'Rimeguard Plate', gloves: 'Rimeguard Gauntlets', boots: 'Rimeguard Greaves' }, fav: ['def', 'res', 'blk', 'hp'], b: { 2: { def: 3, res: 3 }, 3: { res: 5, blk: 7 }, 5: { def: 11, res: 9, blk: 11, hp: 57 } } },
+  { id: 'pyre12', n: 'Cinder Pyromancer', lv: 12, p: { helm: 'Pyre Circlet', armor: 'Pyre Vestments', gloves: 'Pyre Mitts', amulet: 'Pyre Talisman', ring: 'Pyre Band', belt: 'Pyre Sash' }, fav: ['mp', 'lit', 'cdr'], b: { 2: { mp: 10, lit: 6 }, 4: { lit: 12, cdr: 5 }, 6: { mp: 34, lit: 24, cdr: 9, atk: 16 } } },
+  { id: 'wraithtide13', n: 'Tide Wraith', lv: 13, p: { weapon: ['Wraithtide Reaper', 'scythe'], helm: 'Wraithtide Cowl', armor: 'Wraithtide Robe', amulet: 'Wraithtide Locket' }, fav: ['life', 'res', 'cdr'], b: { 2: { life: 2, res: 3 }, 4: { life: 6, res: 10, cdr: 10, atk: 14 } } },
+  { id: 'ironwolf13', n: 'Iron Wolf', lv: 13, p: { weapon: ['Ironwolf Hewer', 'axe'], helm: 'Ironwolf Greathelm', armor: 'Ironwolf Cuirass', gloves: 'Ironwolf Fists', boots: 'Ironwolf Sabatons', belt: 'Ironwolf Belt' }, fav: ['atk', 'hp', 'life'], b: { 2: { atk: 4, hp: 19 }, 4: { hp: 34, life: 3 }, 6: { atk: 14, hp: 58, life: 6 } } },
+  { id: 'frostbound14', n: 'Frostbound Monarch', lv: 14, p: { weapon: ['Frostbound Edge', 'greatsword'], helm: 'Frostbound Visage', armor: 'Frostbound Hauberk', gloves: 'Frostbound Talons', boots: 'Frostbound Stompers', ring: 'Frostbound Signet' }, fav: ['atk', 'res', 'cdd'], b: { 2: { atk: 4, res: 3 }, 4: { res: 5, cdd: 19 }, 6: { atk: 17, res: 10, cdd: 36, hp: 65 } } },
+  { id: 'seer14', n: 'Glacier Seer', lv: 14, p: { helm: 'Seer Circlet', armor: 'Seer Vestments', amulet: 'Seer Talisman', ring: 'Seer Band' }, fav: ['mp', 'cdr', 'xpb'], b: { 2: { mp: 13, cdr: 4 }, 4: { mp: 42, cdr: 11, xpb: 16, atk: 15 } } },
+  { id: 'yetibane15', n: 'Yeti Slayer', lv: 15, p: { weapon: ['Yetibane Hewer', 'axe'], helm: 'Yetibane Hood', armor: 'Yetibane Jerkin', gloves: 'Yetibane Grips' }, fav: ['atk', 'crit', 'gf'], b: { 2: { atk: 6, crit: 3 }, 4: { atk: 17, crit: 8, gf: 22, hp: 64 } } },
+  { id: 'stormcaller15', n: 'Stormcaller', lv: 15, p: { weapon: ['Stormcaller Glaive', 'spear'], helm: 'Stormcaller Casque', armor: 'Stormcaller Scale', gloves: 'Stormcaller Claws', boots: 'Stormcaller Striders', amulet: 'Stormcaller Pendant' }, fav: ['lit', 'crit', 'spd'], b: { 2: { lit: 7, crit: 2 }, 4: { crit: 5, spd: 9 }, 6: { lit: 28, crit: 8, spd: 17, atk: 15 } } },
+  { id: 'blackguard16', n: 'Black Knight', lv: 16, p: { weapon: ['Blackguard Blade', 'sword'], shield: 'Blackguard Bulwark', helm: 'Blackguard Helm', armor: 'Blackguard Plate', gloves: 'Blackguard Gauntlets', boots: 'Blackguard Greaves' }, fav: ['atk', 'def', 'life'], b: { 2: { atk: 4, def: 4 }, 4: { def: 7, life: 3 }, 6: { atk: 16, def: 13, life: 7, hp: 74 } } },
+  { id: 'gilded16', n: 'Night Merchant', lv: 16, p: { helm: 'Gilded Cap', armor: 'Gilded Vest', gloves: 'Gilded Gloves', ring: 'Gilded Band', amulet: 'Gilded Talisman', belt: 'Gilded Belt' }, fav: ['gf', 'mf', 'xpb'], b: { 2: { gf: 6, mf: 8 }, 4: { mf: 16, xpb: 10 }, 6: { gf: 21, mf: 26, xpb: 15, atk: 15 } } },
+  { id: 'soulreaver17', n: 'Soulreaver', lv: 17, p: { weapon: ['Soulreaver Harvester', 'scythe'], helm: 'Soulreaver Skull', armor: 'Soulreaver Ribcage', gloves: 'Soulreaver Knuckles', ring: 'Soulreaver Loop' }, fav: ['life', 'cdd', 'atk'], b: { 2: { life: 2, cdd: 12 }, 3: { cdd: 24, atk: 10 }, 5: { life: 7, cdd: 43, atk: 18, hp: 64 } } },
+  { id: 'dragonsworn17', n: 'Dragonsworn', lv: 17, p: { weapon: ['Dragonsworn Pike', 'spear'], helm: 'Dragonsworn Casque', armor: 'Dragonsworn Scale', boots: 'Dragonsworn Striders', belt: 'Dragonsworn Girdle', amulet: 'Dragonsworn Pendant' }, fav: ['atk', 'hp', 'res'], b: { 2: { atk: 5, hp: 20 }, 4: { hp: 40, res: 6 }, 6: { atk: 17, hp: 65, res: 12 } } },
+  { id: 'eclipse18', n: 'Eclipse Lord', lv: 18, p: { helm: 'Eclipse Cowl', armor: 'Eclipse Robe', gloves: 'Eclipse Wraps', boots: 'Eclipse Slippers', amulet: 'Eclipse Charm', ring: 'Eclipse Signet' }, fav: ['mp', 'cdr', 'mpr'], b: { 2: { mp: 11, cdr: 3 }, 4: { cdr: 7, mpr: 6 }, 6: { mp: 42, cdr: 12, mpr: 12, atk: 16 } } },
+  { id: 'titan18', n: 'Titan\'s Oath', lv: 18, p: { weapon: ['Titan Flail', 'mace'], shield: 'Titan Aegis', helm: 'Titan Greathelm', armor: 'Titan Cuirass', gloves: 'Titan Fists', boots: 'Titan Sabatons', belt: 'Titan Belt' }, fav: ['def', 'hp', 'res', 'blk'], b: { 2: { def: 4, hp: 18 }, 4: { hp: 35, res: 5 }, 6: { res: 7, blk: 10 }, 7: { def: 16, hp: 73, res: 11, blk: 14 } } },
+  { id: 'crusader19', n: 'Ashen Crusader', lv: 19, p: { weapon: ['Crusader Claymore', 'greatsword'], shield: 'Crusader Bulwark', helm: 'Crusader Helm', armor: 'Crusader Plate', gloves: 'Crusader Gauntlets' }, fav: ['atk', 'def', 'res'], b: { 2: { atk: 4, def: 4 }, 3: { def: 9, res: 7 }, 5: { atk: 18, def: 16, res: 11, hp: 78 } } },
+  { id: 'galedancer20', n: 'Wind Dancer', lv: 20, p: { weapon: ['Galedancer Foil', 'rapier'], helm: 'Galedancer Cap', gloves: 'Galedancer Gloves', boots: 'Galedancer Treads', ring: 'Galedancer Seal' }, fav: ['spd', 'crit', 'cdd'], b: { 2: { spd: 5, crit: 2 }, 3: { crit: 5, cdd: 23 }, 5: { spd: 17, crit: 9, cdd: 42, atk: 18 } } },
+  { id: 'sanguine20', n: 'Vampire Lord', lv: 20, p: { weapon: ['Sanguine Stiletto', 'dagger'], helm: 'Sanguine Cowl', armor: 'Sanguine Robe', amulet: 'Sanguine Charm', ring: 'Sanguine Signet' }, fav: ['life', 'cdd', 'regen'], b: { 2: { life: 2, cdd: 13 }, 3: { cdd: 24, regen: 1.3 }, 5: { life: 8, cdd: 48, regen: 2.3, atk: 19 } } },
+  { id: 'abyssal21', n: 'Abyssal Herald', lv: 21, p: { weapon: ['Abyssal Reaper', 'scythe'], helm: 'Abyssal Casque', armor: 'Abyssal Scale', gloves: 'Abyssal Claws', boots: 'Abyssal Striders' }, fav: ['atk', 'life', 'res'], b: { 2: { atk: 5, life: 2 }, 3: { life: 4, res: 6 }, 5: { atk: 18, life: 7, res: 11, hp: 80 } } },
+  { id: 'runeforged22', n: 'Runesmith', lv: 22, p: { weapon: ['Runeforged Hewer', 'axe'], shield: 'Runeforged Bulwark', helm: 'Runeforged Helm', armor: 'Runeforged Plate', gloves: 'Runeforged Gauntlets', belt: 'Runeforged Girdle' }, fav: ['atk', 'def', 'mf'], b: { 2: { atk: 5, def: 4 }, 4: { def: 9, mf: 17 }, 6: { atk: 18, def: 16, mf: 31, hp: 82 } } },
+  { id: 'knell22', n: 'Deathknell', lv: 22, p: { weapon: ['Knell Flail', 'mace'], shield: 'Knell Ossuary Shield', helm: 'Knell Crown', armor: 'Knell Cage', boots: 'Knell Steps' }, fav: ['res', 'hp', 'regen'], b: { 2: { res: 3, hp: 21 }, 3: { hp: 40, regen: 1.3 }, 5: { res: 13, hp: 78, regen: 2.5, atk: 20 } } },
+  { id: 'dawnbringer23', n: 'Dawnbringer', lv: 23, p: { weapon: ['Dawnbringer Blade', 'sword'], shield: 'Dawnbringer Bulwark', helm: 'Dawnbringer Helm', armor: 'Dawnbringer Plate', gloves: 'Dawnbringer Gauntlets', boots: 'Dawnbringer Greaves' }, fav: ['atk', 'crit', 'life', 'res'], b: { 2: { atk: 6, crit: 3 }, 4: { crit: 5, life: 4 }, 6: { atk: 19, crit: 10, life: 8, res: 13 } } },
+  { id: 'voidwalker24', n: 'Voidwalker', lv: 24, p: { weapon: ['Voidwalker Kris', 'dagger'], helm: 'Voidwalker Circlet', armor: 'Voidwalker Vestments', gloves: 'Voidwalker Mitts', boots: 'Voidwalker Sandals', amulet: 'Voidwalker Talisman' }, fav: ['crit', 'cdd', 'spd'], b: { 2: { crit: 3, cdd: 14 }, 4: { cdd: 28, spd: 11 }, 6: { crit: 11, cdd: 46, spd: 20, atk: 21 } } },
+  { id: 'starforged25', n: 'Starforged', lv: 25, p: { weapon: ['Starforged Glaive', 'spear'], helm: 'Starforged Helm', armor: 'Starforged Plate', gloves: 'Starforged Gauntlets', boots: 'Starforged Greaves', ring: 'Starforged Loop' }, fav: ['atk', 'crit', 'cdr'], b: { 2: { atk: 6, crit: 3 }, 4: { crit: 5, cdr: 7 }, 6: { atk: 18, crit: 9, cdr: 12, hp: 85 } } },
+  { id: 'worldbreaker26', n: 'Worldbreaker', lv: 26, p: { weapon: ['Worldbreaker Claymore', 'greatsword'], helm: 'Worldbreaker Casque', armor: 'Worldbreaker Scale', gloves: 'Worldbreaker Claws', boots: 'Worldbreaker Striders', belt: 'Worldbreaker Girdle' }, fav: ['atk', 'hp', 'cdd'], b: { 2: { atk: 6, hp: 25 }, 4: { hp: 43, cdd: 29 }, 6: { atk: 21, hp: 78, cdd: 54 } } },
+  { id: 'primordial28', n: 'Primordial Wyrm', lv: 28, p: { weapon: ['Primordial Hewer', 'axe'], helm: 'Primordial Visage', armor: 'Primordial Hauberk', gloves: 'Primordial Talons', boots: 'Primordial Stompers', ring: 'Primordial Signet', amulet: 'Primordial Charm' }, fav: ['atk', 'res', 'hp', 'life'], b: { 2: { atk: 6, res: 4 }, 4: { res: 7, hp: 39 }, 6: { hp: 56, life: 6 }, 7: { atk: 22, res: 13, hp: 86, life: 9 } } },
+  { id: 'everlasting30', n: 'Throne of Ages', lv: 30, p: { weapon: ['Everlasting Edge', 'sword'], shield: 'Everlasting Aegis', helm: 'Everlasting Greathelm', armor: 'Everlasting Cuirass', gloves: 'Everlasting Fists', boots: 'Everlasting Sabatons', ring: 'Everlasting Band', amulet: 'Everlasting Talisman', belt: 'Everlasting Belt' }, fav: ['atk', 'def', 'res', 'hp', 'cdd'], b: { 2: { atk: 6, def: 5 }, 4: { def: 8, res: 7 }, 6: { res: 8, hp: 58 }, 9: { atk: 22, def: 16, res: 14, hp: 93, cdd: 55 } } }
 ];
 const LEGENDS = [
   { slot: 'weapon', wt: 'sword', n: 'Dawnbreaker', lv: 6, x: { crit: 6, life: 4 } }, { slot: 'weapon', wt: 'greatsword', n: 'Gravemaker', lv: 9, x: { atk: 12, cdd: 30 } },
@@ -1219,8 +1273,255 @@ const LEGENDS = [
   { slot: 'helm', n: 'Crown of the Fallen Saint', lv: 8, x: { hp: 50, regen: 1.5, res: 6 } }, { slot: 'armor', n: 'Shroud of Eternal Dusk', lv: 10, x: { def: 10, res: 10, hp: 60 } },
   { slot: 'shield', n: 'Aegis of the Last Vigil', lv: 7, x: { blk: 12, def: 8, res: 6 } }, { slot: 'gloves', n: 'Grasp of Embers', lv: 9, x: { atk: 8, cdd: 30, swd: 15 } },
   { slot: 'boots', n: 'Treads of the Frozen Wake', lv: 11, x: { spd: 30, res: 6, regen: 1 } }, { slot: 'amulet', n: 'Heart of the Red Wyrm', lv: 14, x: { atk: 10, hp: 80, mf: 20 } },
-  { slot: 'ring', n: 'Eclipse Loop of Ages', lv: 12, x: { crit: 6, cdr: 8, xpb: 15 } }, { slot: 'belt', n: 'Girdle of the Long Winter', lv: 12, x: { hp: 90, def: 8, regen: 2 } }
+  { slot: 'ring', n: 'Eclipse Loop of Ages', lv: 12, x: { crit: 6, cdr: 8, xpb: 15 } }, { slot: 'belt', n: 'Girdle of the Long Winter', lv: 12, x: { hp: 90, def: 8, regen: 2 } },
+  { slot: 'weapon', wt: 'sword', n: 'Vesper Oathblade', lv: 3, x: { crit: 8, swd: 17 } },
+  { slot: 'weapon', wt: 'sword', n: 'Silent Penitent', lv: 7, x: { crit: 7, swd: 13 } },
+  { slot: 'weapon', wt: 'sword', n: 'Moonlit Verdict', lv: 12, x: { cdd: 25, cdr: 8, spd: 19 } },
+  { slot: 'weapon', wt: 'sword', n: 'Ashgrave Brand', lv: 17, x: { cdr: 8, spd: 16, crit: 7 } },
+  { slot: 'weapon', wt: 'sword', n: 'Lantern\'s Last Word', lv: 21, x: { mf: 16, crit: 8, cdd: 28 } },
+  { slot: 'weapon', wt: 'sword', n: 'Cinderheart Saber', lv: 25, x: { crit: 7, cdr: 7, atk: 11 } },
+  { slot: 'weapon', wt: 'sword', n: 'Glorybane', lv: 30, x: { mf: 19, spd: 14, cdd: 31 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Mourner\'s Kiss', lv: 3, x: { crit: 7, cdd: 26 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Thorn of the Widow', lv: 7, x: { cdr: 8, drt: 14 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Silent Cantor', lv: 12, x: { gf: 16, cdd: 24, drt: 14 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Nightingale\'s Sting', lv: 17, x: { atk: 12, drt: 18, mf: 19 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Rat King\'s Tooth', lv: 21, x: { life: 5, gf: 17, atk: 13 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Bonesplitter Kris', lv: 25, x: { cdr: 8, life: 6, crit: 8 } },
+  { slot: 'weapon', wt: 'dagger', n: 'Eclipse Stiletto', lv: 30, x: { atk: 10, cdd: 31, drt: 14 } },
+  { slot: 'weapon', wt: 'spear', n: 'Wolfsbane Pike', lv: 3, x: { cdd: 25, atk: 14 } },
+  { slot: 'weapon', wt: 'spear', n: 'Longwinter Spear', lv: 7, x: { swd: 16, cdr: 9 } },
+  { slot: 'weapon', wt: 'spear', n: 'Judas Lance', lv: 12, x: { atk: 11, gf: 16, crit: 7 } },
+  { slot: 'weapon', wt: 'spear', n: 'Gargoyle\'s Spite', lv: 17, x: { mf: 16, swd: 17, crit: 6 } },
+  { slot: 'weapon', wt: 'spear', n: 'Stormpiercer', lv: 21, x: { cdd: 28, atk: 12, swd: 15 } },
+  { slot: 'weapon', wt: 'spear', n: 'Hunter\'s Last Mile', lv: 25, x: { atk: 14, crit: 6, cdd: 30 } },
+  { slot: 'weapon', wt: 'spear', n: 'Halberd of Embers', lv: 30, x: { cdr: 8, life: 5, atk: 13 } },
+  { slot: 'weapon', wt: 'axe', n: 'Gravedigger\'s Wrath', lv: 3, x: { spd: 18, mf: 18 } },
+  { slot: 'weapon', wt: 'axe', n: 'Frostmourn Hewer', lv: 7, x: { cdr: 7, cdd: 32 } },
+  { slot: 'weapon', wt: 'axe', n: 'Blackthorn Cleaver', lv: 12, x: { swd: 16, spd: 16, mf: 21 } },
+  { slot: 'weapon', wt: 'axe', n: 'Ironwolf Fang', lv: 17, x: { swd: 16, atk: 14, spd: 18 } },
+  { slot: 'weapon', wt: 'axe', n: 'Headsman\'s Sorrow', lv: 21, x: { life: 4, crit: 8, atk: 14 } },
+  { slot: 'weapon', wt: 'axe', n: 'Ember Splitter', lv: 25, x: { atk: 12, swd: 14, mf: 17 } },
+  { slot: 'weapon', wt: 'axe', n: 'Yetibane', lv: 30, x: { swd: 16, crit: 8, mf: 18 } },
+  { slot: 'weapon', wt: 'mace', n: 'Bellringer\'s Toll', lv: 3, x: { crit: 7, cdr: 9 } },
+  { slot: 'weapon', wt: 'mace', n: 'Warden\'s Verdict', lv: 7, x: { life: 5, gf: 16 } },
+  { slot: 'weapon', wt: 'mace', n: 'Penance', lv: 11, x: { gf: 18, cdr: 9 } },
+  { slot: 'weapon', wt: 'mace', n: 'Lantern Maul', lv: 15, x: { life: 5, crit: 7, cdr: 9 } },
+  { slot: 'weapon', wt: 'mace', n: 'Sunforged Mercy', lv: 18, x: { cdr: 8, cdd: 29, atk: 14 } },
+  { slot: 'weapon', wt: 'mace', n: 'Knell of Ages', lv: 22, x: { crit: 7, life: 5, mf: 17 } },
+  { slot: 'weapon', wt: 'mace', n: 'Pilgrim\'s Reckoning', lv: 26, x: { crit: 8, life: 6, cdd: 24 } },
+  { slot: 'weapon', wt: 'mace', n: 'Hollow Gavel', lv: 30, x: { swd: 15, gf: 19, cdd: 33 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Widowmaker', lv: 3, x: { crit: 6, swd: 16 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Candlebreaker', lv: 7, x: { mf: 19, cdd: 30 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Sundering Oath', lv: 12, x: { cdr: 8, crit: 7, mf: 21 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Black Knight\'s Sin', lv: 17, x: { spd: 14, atk: 12, crit: 7 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Winterfall', lv: 21, x: { cdr: 8, cdd: 27, life: 6 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Ashen Crusader\'s Edge', lv: 25, x: { mf: 21, spd: 15, atk: 10 } },
+  { slot: 'weapon', wt: 'greatsword', n: 'Eclipse Greatblade', lv: 30, x: { crit: 8, spd: 17, life: 5 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Moonthorn Foil', lv: 3, x: { spd: 18, cdr: 8 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Whisper of Lace', lv: 7, x: { atk: 13, cdr: 7 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Vesper Needle', lv: 11, x: { cdr: 8, spd: 15 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Duelist\'s Epitaph', lv: 15, x: { mf: 20, spd: 17, atk: 14 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Frostbite Estoc', lv: 18, x: { swd: 13, life: 6, mf: 18 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Starlit Thrust', lv: 22, x: { cdd: 24, cdr: 9, life: 4 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Crimson Waltz', lv: 26, x: { cdr: 9, swd: 18, cdd: 26 } },
+  { slot: 'weapon', wt: 'rapier', n: 'Thin Red Line', lv: 30, x: { swd: 14, spd: 15, atk: 11 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Harvest of Sorrows', lv: 3, x: { gf: 16, life: 5 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Grim Equinox', lv: 7, x: { gf: 14, spd: 15 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Gravewind', lv: 12, x: { crit: 7, cdd: 27, gf: 16 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Marrow Reaper', lv: 17, x: { life: 6, atk: 12, mf: 20 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Pale Horseman\'s Arc', lv: 21, x: { life: 5, spd: 14, cdd: 27 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Soulreaver\'s Crescent', lv: 25, x: { lit: 14, life: 5, atk: 12 } },
+  { slot: 'weapon', wt: 'scythe', n: 'Last Harvest', lv: 30, x: { atk: 12, cdd: 31, lit: 17 } },
+  { slot: 'shield', n: 'Bulwark of Penance', lv: 3, x: { regen: 1.3, hp: 64 } },
+  { slot: 'shield', n: 'Ward of the Lantern', lv: 6, x: { regen: 1.8, hp: 61 } },
+  { slot: 'shield', n: 'Rimeguard Wall', lv: 8, x: { blk: 9, def: 9 } },
+  { slot: 'shield', n: 'Gargoyle Heart Shield', lv: 11, x: { life: 6, blk: 11 } },
+  { slot: 'shield', n: 'Iron Penitent\'s Cross', lv: 14, x: { life: 5, hp: 56, blk: 11 } },
+  { slot: 'shield', n: 'Titan\'s Oath Aegis', lv: 17, x: { def: 10, regen: 1.4, blk: 9 } },
+  { slot: 'shield', n: 'Mirror of Mourning', lv: 19, x: { res: 8, regen: 1.3, hp: 57 } },
+  { slot: 'shield', n: 'Dawnbringer Aegis', lv: 22, x: { regen: 1.5, life: 5, def: 10 } },
+  { slot: 'shield', n: 'Black Knight\'s Refusal', lv: 25, x: { hp: 70, res: 8, regen: 1.5 } },
+  { slot: 'shield', n: 'Shield of the Silent Choir', lv: 27, x: { blk: 9, hp: 60, res: 8 } },
+  { slot: 'shield', n: 'Runeforged Bastion', lv: 30, x: { res: 8, def: 8, hp: 56 } },
+  { slot: 'helm', n: 'Visor of Ashen Vows', lv: 3, x: { xpb: 12, cdr: 9 } },
+  { slot: 'helm', n: 'Plague Doctor\'s Beak', lv: 5, x: { regen: 1.7, hp: 72 } },
+  { slot: 'helm', n: 'Hood of the Vesper Choir', lv: 6, x: { def: 9, cdr: 7 } },
+  { slot: 'helm', n: 'Wolfskull Helm', lv: 8, x: { regen: 1.5, def: 8 } },
+  { slot: 'helm', n: 'Crown of the Frostbitten King', lv: 10, x: { mp: 35, hp: 67 } },
+  { slot: 'helm', n: 'Gargoyle Visage', lv: 11, x: { res: 7, def: 11 } },
+  { slot: 'helm', n: 'Helm of the Black Knight', lv: 13, x: { hp: 76, mp: 26, def: 8 } },
+  { slot: 'helm', n: 'Dragonsworn Casque', lv: 15, x: { res: 8, regen: 1.4, hp: 65 } },
+  { slot: 'helm', n: 'Eclipse Diadem', lv: 17, x: { xpb: 14, cdr: 9, hp: 63 } },
+  { slot: 'helm', n: 'Cowl of Whispers', lv: 18, x: { res: 8, xpb: 10, mp: 32 } },
+  { slot: 'helm', n: 'Gravedigger\'s Brim', lv: 20, x: { mf: 22, cdr: 8, res: 6 } },
+  { slot: 'helm', n: 'Marrowbane Skull', lv: 22, x: { def: 9, res: 8, hp: 58 } },
+  { slot: 'helm', n: 'Crown of Hollow Bells', lv: 23, x: { regen: 1.7, cdr: 8, res: 8 } },
+  { slot: 'helm', n: 'Starforged Greathelm', lv: 25, x: { cdr: 8, def: 9, res: 7 } },
+  { slot: 'helm', n: 'Mask of the Mourning Widow', lv: 27, x: { mf: 20, def: 8, xpb: 10 } },
+  { slot: 'helm', n: 'Veil of the Night Merchant', lv: 28, x: { mp: 26, def: 10, xpb: 12 } },
+  { slot: 'helm', n: 'Stormcaller\'s Circlet', lv: 30, x: { mp: 33, xpb: 14, mf: 17 } },
+  { slot: 'armor', n: 'Cinderplate', lv: 3, x: { mpr: 9, blk: 11 } },
+  { slot: 'armor', n: 'Plaguebearer\'s Garb', lv: 5, x: { def: 10, mpr: 7 } },
+  { slot: 'armor', n: 'Mail of the Long Night', lv: 6, x: { mpr: 9, regen: 1.5 } },
+  { slot: 'armor', n: 'Robe of the Vesper Choir', lv: 8, x: { res: 8, regen: 1.3 } },
+  { slot: 'armor', n: 'Widow\'s Weeds', lv: 9, x: { regen: 1.3, hp: 76 } },
+  { slot: 'armor', n: 'Ironwolf Hauberk', lv: 11, x: { res: 7, hp: 63 } },
+  { slot: 'armor', n: 'Frostbound Cuirass', lv: 13, x: { res: 8, regen: 1.6, mpr: 8 } },
+  { slot: 'armor', n: 'Gargoyle Scale', lv: 14, x: { regen: 1.5, hp: 70, blk: 10 } },
+  { slot: 'armor', n: 'Dragonsworn Mail', lv: 16, x: { blk: 12, res: 8, hp: 78 } },
+  { slot: 'armor', n: 'Mantle of the Eclipse', lv: 17, x: { res: 6, blk: 10, def: 11 } },
+  { slot: 'armor', n: 'Gilded Brigandine', lv: 19, x: { regen: 1.3, hp: 66, blk: 12 } },
+  { slot: 'armor', n: 'Soulreaver Shroud', lv: 20, x: { hp: 73, blk: 10, def: 9 } },
+  { slot: 'armor', n: 'Titan\'s Bastion', lv: 22, x: { res: 8, mpr: 7, blk: 9 } },
+  { slot: 'armor', n: 'Runeforged Breastplate', lv: 24, x: { res: 7, blk: 10, hp: 78 } },
+  { slot: 'armor', n: 'Voidwalker Raiment', lv: 25, x: { mpr: 10, def: 8, regen: 1.5 } },
+  { slot: 'armor', n: 'Starforged Cuirass', lv: 27, x: { def: 8, res: 6, hp: 77 } },
+  { slot: 'armor', n: 'Worldbreaker Carapace', lv: 28, x: { res: 7, blk: 9, hp: 73 } },
+  { slot: 'armor', n: 'Primordial Scale', lv: 30, x: { hp: 63, def: 8, res: 8 } },
+  { slot: 'gloves', n: 'Gravedigger\'s Grip', lv: 3, x: { atk: 13, bow: 18 } },
+  { slot: 'gloves', n: 'Ratcatcher\'s Snare', lv: 5, x: { atk: 12, lit: 16 } },
+  { slot: 'gloves', n: 'Fists of the Iron Wolf', lv: 7, x: { cdd: 27, bow: 14 } },
+  { slot: 'gloves', n: 'Plague Hands', lv: 9, x: { life: 5, bow: 15 } },
+  { slot: 'gloves', n: 'Stormcaller Gauntlets', lv: 11, x: { lit: 16, drt: 16 } },
+  { slot: 'gloves', n: 'Gauntlets of the Black Knight', lv: 13, x: { crit: 7, drt: 14, life: 6 } },
+  { slot: 'gloves', n: 'Widow\'s Embrace', lv: 15, x: { bow: 14, swd: 16, atk: 12 } },
+  { slot: 'gloves', n: 'Starforged Fists', lv: 17, x: { lit: 16, atk: 12, cdd: 28 } },
+  { slot: 'gloves', n: 'Dragonclaw Grips', lv: 18, x: { atk: 12, swd: 17, crit: 7 } },
+  { slot: 'gloves', n: 'Galedancer Wraps', lv: 20, x: { drt: 13, swd: 13, crit: 6 } },
+  { slot: 'gloves', n: 'Soulreaver Talons', lv: 22, x: { lit: 16, atk: 12, bow: 15 } },
+  { slot: 'gloves', n: 'Runeforged Gauntlets', lv: 24, x: { cdd: 33, bow: 13, crit: 7 } },
+  { slot: 'gloves', n: 'Void Touch', lv: 26, x: { atk: 10, swd: 18, cdd: 28 } },
+  { slot: 'gloves', n: 'Gloves of the Night Merchant', lv: 28, x: { lit: 17, bow: 14, crit: 6 } },
+  { slot: 'gloves', n: 'Penitent\'s Manacles', lv: 30, x: { lit: 14, cdd: 33, atk: 14 } },
+  { slot: 'boots', n: 'Bogwalker Treads', lv: 3, x: { res: 8, spd: 18 } },
+  { slot: 'boots', n: 'Gale Dancer\'s Steps', lv: 5, x: { gf: 17, spd: 15 } },
+  { slot: 'boots', n: 'Ironwolf Stompers', lv: 7, x: { def: 9, hp: 75 } },
+  { slot: 'boots', n: 'Mourner\'s Slippers', lv: 9, x: { cdr: 9, regen: 1.4 } },
+  { slot: 'boots', n: 'Boots of the Long Road', lv: 11, x: { res: 7, def: 9 } },
+  { slot: 'boots', n: 'Voidstep Sabatons', lv: 13, x: { hp: 56, def: 10, res: 7 } },
+  { slot: 'boots', n: 'Eclipse Sandals', lv: 15, x: { res: 8, def: 9, hp: 59 } },
+  { slot: 'boots', n: 'Titan\'s March', lv: 17, x: { def: 8, cdr: 8, spd: 16 } },
+  { slot: 'boots', n: 'Dragonsworn Greaves', lv: 18, x: { cdr: 8, def: 8, hp: 70 } },
+  { slot: 'boots', n: 'Rimeguard Sabatons', lv: 20, x: { spd: 18, gf: 16, regen: 1.3 } },
+  { slot: 'boots', n: 'Black Knight\'s Tread', lv: 22, x: { hp: 56, def: 8, res: 7 } },
+  { slot: 'boots', n: 'Stormtreader', lv: 24, x: { res: 8, def: 11, regen: 1.4 } },
+  { slot: 'boots', n: 'Ashwalker Boots', lv: 26, x: { spd: 18, regen: 1.4, hp: 76 } },
+  { slot: 'boots', n: 'Wolfhunter Boots', lv: 28, x: { regen: 1.4, hp: 61, def: 9 } },
+  { slot: 'boots', n: 'Starforged Greaves', lv: 30, x: { res: 6, cdr: 9, def: 10 } },
+  { slot: 'ring', n: 'Band of the Candle', lv: 3, x: { gf: 18, xpb: 11 } },
+  { slot: 'ring', n: 'Widow\'s Ring', lv: 5, x: { cdd: 30, crit: 7 } },
+  { slot: 'ring', n: 'Signet of the Ratcatcher', lv: 6, x: { mpr: 8, cdr: 8 } },
+  { slot: 'ring', n: 'Ring of Mourning Bells', lv: 8, x: { gf: 15, mf: 22 } },
+  { slot: 'ring', n: 'Ashen Crusader\'s Seal', lv: 9, x: { xpb: 12, mf: 16 } },
+  { slot: 'ring', n: 'Cinder Loop', lv: 11, x: { atk: 13, xpb: 14 } },
+  { slot: 'ring', n: 'Eclipse Ring of Sorrows', lv: 13, x: { life: 5, cdd: 33, xpb: 13 } },
+  { slot: 'ring', n: 'Frostbitten Signet', lv: 14, x: { mf: 16, crit: 6, cdd: 30 } },
+  { slot: 'ring', n: 'Loop of the Night Merchant', lv: 16, x: { gf: 16, cdd: 24, life: 5 } },
+  { slot: 'ring', n: 'Voidwalker\'s Band', lv: 17, x: { crit: 6, cdd: 27, mpr: 7 } },
+  { slot: 'ring', n: 'Stormcaller Ring', lv: 19, x: { mf: 19, atk: 13, mpr: 7 } },
+  { slot: 'ring', n: 'Starforged Signet', lv: 20, x: { mpr: 7, xpb: 14, cdr: 9 } },
+  { slot: 'ring', n: 'Soulreaver\'s Seal', lv: 22, x: { mpr: 9, cdr: 9, crit: 8 } },
+  { slot: 'ring', n: 'Dragonsworn Signet', lv: 24, x: { gf: 14, life: 6, crit: 8 } },
+  { slot: 'ring', n: 'Ring of Gilded Ages', lv: 25, x: { mpr: 7, cdd: 24, cdr: 7 } },
+  { slot: 'ring', n: 'Moonlit Band', lv: 27, x: { crit: 7, gf: 14, cdr: 9 } },
+  { slot: 'ring', n: 'Ring of Hollow Vows', lv: 28, x: { crit: 7, atk: 12, cdr: 9 } },
+  { slot: 'ring', n: 'Runeforged Loop', lv: 30, x: { gf: 15, xpb: 11, life: 4 } },
+  { slot: 'amulet', n: 'Locket of the Widow', lv: 3, x: { cdd: 24, mpr: 9 } },
+  { slot: 'amulet', n: 'Pendant of the Vesper Choir', lv: 5, x: { cdd: 31, mp: 30 } },
+  { slot: 'amulet', n: 'Tooth of the Frozen Wolf', lv: 6, x: { mf: 17, mp: 32 } },
+  { slot: 'amulet', n: 'Rosary of Ashen Vows', lv: 8, x: { mp: 35, regen: 1.8 } },
+  { slot: 'amulet', n: 'Eye of the Seer', lv: 10, x: { xpb: 11, hp: 68 } },
+  { slot: 'amulet', n: 'Amulet of Plagues', lv: 11, x: { res: 8, mpr: 8 } },
+  { slot: 'amulet', n: 'Charm of the Gilded Hand', lv: 13, x: { mf: 16, mp: 35, hp: 74 } },
+  { slot: 'amulet', n: 'Heart of the Iron Wolf', lv: 15, x: { mf: 17, atk: 12, regen: 1.6 } },
+  { slot: 'amulet', n: 'Starforged Talisman', lv: 17, x: { res: 7, mpr: 8, cdd: 24 } },
+  { slot: 'amulet', n: 'Dragonsworn Fang', lv: 18, x: { hp: 68, res: 7, mf: 17 } },
+  { slot: 'amulet', n: 'Soulreaver\'s Phylactery', lv: 20, x: { life: 5, mp: 26, atk: 11 } },
+  { slot: 'amulet', n: 'Frost Seer\'s Tear', lv: 22, x: { atk: 13, regen: 1.3, life: 4 } },
+  { slot: 'amulet', n: 'Void Locket', lv: 23, x: { hp: 57, mp: 32, life: 5 } },
+  { slot: 'amulet', n: 'Eclipse Necklace', lv: 25, x: { mp: 28, mf: 16, mpr: 9 } },
+  { slot: 'amulet', n: 'Bellringer\'s Medal', lv: 27, x: { mp: 34, atk: 13, life: 5 } },
+  { slot: 'amulet', n: 'Titan\'s Heart', lv: 28, x: { hp: 76, regen: 1.3, xpb: 13 } },
+  { slot: 'amulet', n: 'Phoenix Ember', lv: 30, x: { xpb: 10, hp: 67, res: 6 } },
+  { slot: 'belt', n: 'Gravedigger\'s Rope', lv: 3, x: { res: 6, gf: 17 } },
+  { slot: 'belt', n: 'Ratcatcher Sash', lv: 5, x: { gf: 17, hp: 62 } },
+  { slot: 'belt', n: 'Bog Wanderer Belt', lv: 6, x: { res: 7, hp: 62 } },
+  { slot: 'belt', n: 'Belt of the Iron Wolf', lv: 8, x: { mpr: 7, hp: 66 } },
+  { slot: 'belt', n: 'Titan\'s Girdle', lv: 10, x: { res: 8, gf: 15 } },
+  { slot: 'belt', n: 'Lantern Warden\'s Cincture', lv: 11, x: { res: 7, blk: 11 } },
+  { slot: 'belt', n: 'Dragonsworn Cincture', lv: 13, x: { regen: 1.4, blk: 9, def: 10 } },
+  { slot: 'belt', n: 'Rimeguard Girdle', lv: 15, x: { res: 8, def: 10, hp: 66 } },
+  { slot: 'belt', n: 'Gilded Sash', lv: 17, x: { gf: 17, blk: 10, hp: 64 } },
+  { slot: 'belt', n: 'Runeforged Belt', lv: 18, x: { res: 7, gf: 17, hp: 64 } },
+  { slot: 'belt', n: 'Worldbreaker Belt', lv: 20, x: { regen: 1.7, mpr: 8, res: 7 } },
+  { slot: 'belt', n: 'Cord of the Crypt Keeper', lv: 22, x: { gf: 14, def: 10, res: 8 } },
+  { slot: 'belt', n: 'Thornwood Sash', lv: 23, x: { blk: 10, gf: 15, hp: 59 } },
+  { slot: 'belt', n: 'Belt of Lost Pilgrims', lv: 25, x: { gf: 16, regen: 1.6, def: 8 } },
+  { slot: 'belt', n: 'Starforged Cincture', lv: 27, x: { res: 7, gf: 15, def: 10 } },
+  { slot: 'belt', n: 'Voidwalker Sash', lv: 28, x: { gf: 18, def: 10, mpr: 8 } },
+  { slot: 'belt', n: 'Sash of the Duelist', lv: 30, x: { regen: 1.4, gf: 17, hp: 60 } }
 ];
+const FXDATA = {L:{Dawnbreaker:{fx:{t:"kill",k:"chain",e:"holy",nm:"Radiant Chain",ch:50,cd:0.8,p:1.21,n:5},v:{c:"#fffcac",d:"#8e8907",a:"star",n:4,s:1.24}},Gravemaker:{fx:{t:"skill",k:"cdreset",e:"bone",nm:"Grave Echo",ch:27,cd:1.0,p:1.4},v:{c:"#ddc1a7",d:"#5f4329",a:"shard",n:4,s:1.04}},Whisperfang:{fx:{t:"hit",k:"burn",e:"shadow",nm:"Umbral Blight",ch:11,cd:2.0,p:0.49,d:3},v:{c:"#996ce5",d:"#311660",a:"wisp",n:3,s:0.8}},"Hollow King Cleaver":{fx:{t:"hit",k:"execute",e:"venom",nm:"Venomous Reaping",ch:24,cd:2.0,p:0.18},v:{c:"#9be66a",d:"#336015",a:"drop2",n:4,s:1.32}},"Reaper of Ashen Vows":{fx:{t:"skill",k:"chain",e:"fire",nm:"Scorching Chain",ch:28,cd:1.0,p:1.22,n:4},v:{c:"#ff9748",d:"#6d3206",a:"ember",n:3,s:1.08}},"Frostfang Lance":{fx:{t:"skill",k:"rain",e:"frost",nm:"Frozen Barrage",ch:34,cd:1.0,p:0.96,n:4},v:{c:"#97d3ff",d:"#075187",a:"flake",n:3,s:1.26}},"Crown of the Fallen Saint":{fx:{t:"hurt",k:"thorns",e:"holy",nm:"Radiant Retribution",ch:19,cd:4.0,p:1.45,r:105},v:{c:"#fff382",d:"#807407",a:"star",n:3,s:0.92}},"Shroud of Eternal Dusk":{fx:{t:"tick",k:"heal",e:"shadow",nm:"Umbral Renewal",ch:100,cd:15.0,iv:15.0,p:0.091},v:{c:"#895ce3",d:"#2c145b",a:"wisp",n:3,s:1.33}},"Aegis of the Last Vigil":{fx:{t:"tick",k:"freeze",e:"holy",nm:"Radiant Stasis",ch:100,cd:9.0,iv:9.0,r:108,d:1.6},v:{c:"#fbff86",d:"#7e8107",a:"star",n:2,s:0.87}},"Grasp of Embers":{fx:{t:"kill",k:"cdreset",e:"fire",nm:"Scorching Echo",ch:60,cd:0.8,p:1.2},v:{c:"#ff7d41",d:"#6a2606",a:"ember",n:3,s:1.18}},"Treads of the Frozen Wake":{fx:{t:"hurt",k:"haste",e:"frost",nm:"Frozen Haste",ch:21,cd:4.0,p:0.17,d:4},v:{c:"#a6ceff",d:"#07438c",a:"flake",n:4,s:0.91}},"Heart of the Red Wyrm":{fx:{t:"kill",k:"gold",e:"blood",nm:"Crimson Tithe",ch:46,cd:0.8,n:20},v:{c:"#e45b8b",d:"#5c142d",a:"drop",n:2,s:1.28}},"Eclipse Loop of Ages":{fx:{t:"hurt",k:"revive",e:"shadow",nm:"Umbral Second Life",ch:100,cd:118.0,p:0.44},v:{c:"#8260e3",d:"#28155c",a:"wisp",n:3,s:1.1}},"Girdle of the Long Winter":{fx:{t:"kill",k:"mana",e:"frost",nm:"Frozen Wellspring",ch:36,cd:0.8,p:0.082},v:{c:"#a0eaff",d:"#076d8a",a:"flake",n:4,s:0.98}},"Vesper Oathblade":{fx:{t:"crit",k:"freeze",e:"holy",nm:"Radiant Stasis Fury",ch:50,cd:1.5,r:135,d:1.8},v:{c:"#ffe7b2",d:"#906508",a:"star",n:2,s:0.79}},"Silent Penitent":{fx:{t:"crit",k:"pull",e:"holy",nm:"Radiant Vortex",ch:46,cd:1.5,p:0.56,r:137},v:{c:"#fff3b2",d:"#907b08",a:"star",n:3,s:0.91}},"Moonlit Verdict":{fx:{t:"hit",k:"burn",e:"moon",nm:"Lunar Blight",ch:10,cd:2.0,p:0.51,d:5},v:{c:"#b2c3ff",d:"#082490",a:"crescent",n:4,s:1.26}},"Ashgrave Brand":{fx:{t:"hit",k:"slow",e:"bone",nm:"Grave Drag",ch:14,cd:2.0,r:132,d:3},v:{c:"#eadfc8",d:"#6a572e",a:"shard",n:4,s:0.83}},"Lantern's Last Word":{fx:{t:"kill",k:"nova",e:"holy",nm:"Radiant Nova",ch:41,cd:0.8,p:1.56,r:115},v:{c:"#ffeab2",d:"#906b08",a:"star",n:4,s:0.85}},"Cinderheart Saber":{fx:{t:"crit",k:"slow",e:"fire",nm:"Scorching Drag",ch:47,cd:1.5,r:145,d:2},v:{c:"#ff4a16",d:"#5c1805",a:"ember",n:3,s:1.21}},Glorybane:{fx:{t:"crit",k:"chain",e:"gale",nm:"Gale Chain",ch:39,cd:1.5,p:1.51,n:5},v:{c:"#c0f2e7",d:"#1f7965",a:"swirl",n:4,s:0.73}},"Mourner's Kiss":{fx:{t:"hit",k:"execute",e:"shadow",nm:"Umbral Reaping",ch:28,cd:2.0,p:0.19},v:{c:"#b299ed",d:"#321970",a:"wisp",n:3,s:0.74}},"Thorn of the Widow":{fx:{t:"hit",k:"execute",e:"blood",nm:"Crimson Reaping",ch:30,cd:2.0,p:0.2},v:{c:"#d62339",d:"#480f16",a:"drop",n:3,s:0.84}},"Silent Cantor":{fx:{t:"kill",k:"rain",e:"gold",nm:"Gilded Barrage",ch:35,cd:0.8,p:1.55,n:4},v:{c:"#ffad3f",d:"#6a3f06",a:"coin",n:4,s:1.04}},"Nightingale's Sting":{fx:{t:"hurt",k:"slow",e:"shadow",nm:"Umbral Drag",ch:13,cd:4.0,r:155,d:3},v:{c:"#997be8",d:"#2c1766",a:"wisp",n:4,s:0.92}},"Rat King's Tooth":{fx:{t:"crit",k:"rain",e:"venom",nm:"Venomous Barrage",ch:37,cd:1.5,p:1.94,n:6},v:{c:"#86de40",d:"#2f5212",a:"drop2",n:2,s:1.09}},"Bonesplitter Kris":{fx:{t:"hurt",k:"slow",e:"bone",nm:"Grave Drag Reprisal",ch:17,cd:4.0,r:160,d:3},v:{c:"#eae5c8",d:"#6a612e",a:"shard",n:3,s:0.83}},"Eclipse Stiletto":{fx:{t:"skill",k:"rain",e:"shadow",nm:"Umbral Barrage",ch:36,cd:1.0,p:2.17,n:4},v:{c:"#8371e6",d:"#221662",a:"wisp",n:4,s:0.89}},"Wolfsbane Pike":{fx:{t:"hit",k:"chain",e:"rune",nm:"Runic Chain",ch:9,cd:2.0,p:0.65,n:3},v:{c:"#59c9ff",d:"#064f72",a:"rune",n:4,s:0.9}},"Longwinter Spear":{fx:{t:"skill",k:"frenzy",e:"frost",nm:"Frozen Frenzy",ch:44,cd:1.0,p:0.29,d:6},v:{c:"#b0d8ff",d:"#084c8f",a:"flake",n:4,s:0.82}},"Judas Lance":{fx:{t:"crit",k:"frenzy",e:"wyrm",nm:"Wyrmfire Frenzy",ch:45,cd:1.5,p:0.17,d:6},v:{c:"#ff601e",d:"#5f1f05",a:"ember2",n:3,s:0.78}},"Gargoyle's Spite":{fx:{t:"crit",k:"burn",e:"void",nm:"Void Blight",ch:45,cd:1.5,p:0.71,d:4},v:{c:"#e382ff",d:"#650780",a:"wisp2",n:3,s:0.99}},Stormpiercer:{fx:{t:"skill",k:"drain",e:"storm",nm:"Storm Siphon",ch:43,cd:1.0,p:1.17,r:121},v:{c:"#fffd3b",d:"#696806",a:"spark",n:3,s:0.88}},"Hunter's Last Mile":{fx:{t:"skill",k:"cdreset",e:"wyrm",nm:"Wyrmfire Echo",ch:42,cd:1.0,p:1.6},v:{c:"#ff4f06",d:"#571d05",a:"ember2",n:3,s:1.21}},"Halberd of Embers":{fx:{t:"kill",k:"nova",e:"fire",nm:"Scorching Nova",ch:34,cd:0.8,p:2.83,r:100},v:{c:"#ffaa39",d:"#683d05",a:"ember",n:2,s:0.73}},"Gravedigger's Wrath":{fx:{t:"hurt",k:"freeze",e:"venom",nm:"Venomous Stasis",ch:12,cd:4.0,r:112,d:1.3},v:{c:"#80db2d",d:"#2d4c11",a:"drop2",n:4,s:0.83}},"Frostmourn Hewer":{fx:{t:"hit",k:"nova",e:"frost",nm:"Frozen Nova",ch:9,cd:2.0,p:1.58,r:75},v:{c:"#a0dbff",d:"#07588a",a:"flake",n:4,s:1.11}},"Blackthorn Cleaver":{fx:{t:"crit",k:"frenzy",e:"venom",nm:"Venomous Frenzy",ch:38,cd:1.5,p:0.22,d:8},v:{c:"#92e66c",d:"#2d6115",a:"drop2",n:3,s:1.16}},"Ironwolf Fang":{fx:{t:"hit",k:"execute",e:"gale",nm:"Gale Reaping",ch:29,cd:2.0,p:0.19},v:{c:"#bef2ef",d:"#1f7874",a:"swirl",n:4,s:1.38}},"Headsman's Sorrow":{fx:{t:"hurt",k:"freeze",e:"gold",nm:"Gilded Stasis",ch:18,cd:4.0,r:112,d:1.2},v:{c:"#ffee7d",d:"#7e6e07",a:"coin",n:4,s:1.04}},"Ember Splitter":{fx:{t:"hurt",k:"pull",e:"fire",nm:"Scorching Vortex",ch:20,cd:4.0,p:0.71,r:145},v:{c:"#ff8f1e",d:"#5f3205",a:"ember",n:2,s:0.79}},Yetibane:{fx:{t:"crit",k:"rain",e:"frost",nm:"Frozen Barrage Fury",ch:31,cd:1.5,p:1.5,n:5},v:{c:"#74e7ff",d:"#06677b",a:"flake",n:4,s:0.74}},"Bellringer's Toll":{fx:{t:"hurt",k:"nova",e:"void",nm:"Void Nova",ch:17,cd:4.0,p:1.12,r:71},v:{c:"#9947ff",d:"#34066c",a:"wisp2",n:2,s:1.0}},"Warden's Verdict":{fx:{t:"skill",k:"cdreset",e:"storm",nm:"Storm Echo",ch:31,cd:1.0,p:2.1},v:{c:"#ffd859",d:"#725906",a:"spark",n:4,s:0.81}},Penance:{fx:{t:"hurt",k:"slow",e:"wyrm",nm:"Wyrmfire Drag",ch:24,cd:4.0,r:135,d:3},v:{c:"#ff5735",d:"#661605",a:"ember2",n:2,s:1.35}},"Lantern Maul":{fx:{t:"tick",k:"rain",e:"holy",nm:"Radiant Barrage",ch:100,cd:16.0,iv:16.0,p:1.35,n:3},v:{c:"#fffc97",d:"#878407",a:"star",n:2,s:1.11}},"Sunforged Mercy":{fx:{t:"hit",k:"slow",e:"gale",nm:"Gale Drag",ch:8,cd:2.0,r:132,d:4},v:{c:"#c0f2dc",d:"#1f7951",a:"swirl",n:2,s:0.93}},"Knell of Ages":{fx:{t:"tick",k:"freeze",e:"bone",nm:"Grave Stasis",ch:100,cd:15.0,iv:15.0,r:82,d:1.5},v:{c:"#e7dcc0",d:"#67562d",a:"shard",n:2,s:1.11}},"Pilgrim's Reckoning":{fx:{t:"skill",k:"drain",e:"holy",nm:"Radiant Siphon",ch:31,cd:1.0,p:1.52,r:133},v:{c:"#ffe98b",d:"#836c07",a:"star",n:2,s:1.3}},"Hollow Gavel":{fx:{t:"skill",k:"chain",e:"rune",nm:"Runic Chain Surge",ch:26,cd:1.0,p:1.96,n:3},v:{c:"#8cc6ff",d:"#074683",a:"rune",n:2,s:0.88}},Widowmaker:{fx:{t:"crit",k:"nova",e:"blood",nm:"Crimson Nova",ch:50,cd:1.5,p:1.53,r:105},v:{c:"#de3644",d:"#501116",a:"drop",n:4,s:1.03}},Candlebreaker:{fx:{t:"hit",k:"pull",e:"holy",nm:"Radiant Vortex Strike",ch:14,cd:2.0,p:0.52,r:120},v:{c:"#fff496",d:"#877a07",a:"star",n:2,s:0.9}},"Sundering Oath":{fx:{t:"crit",k:"rain",e:"rune",nm:"Runic Barrage",ch:38,cd:1.5,p:1.31,n:4},v:{c:"#46a6ff",d:"#063b6c",a:"rune",n:3,s:0.86}},"Black Knight's Sin":{fx:{t:"crit",k:"chain",e:"shadow",nm:"Umbral Chain",ch:30,cd:1.5,p:1.26,n:3},v:{c:"#7c63e4",d:"#23155d",a:"wisp",n:2,s:1.05}},Winterfall:{fx:{t:"crit",k:"burn",e:"frost",nm:"Frozen Blight",ch:50,cd:1.5,p:0.44,d:3},v:{c:"#71bdff",d:"#06457a",a:"flake",n:4,s:1.3}},"Ashen Crusader's Edge":{fx:{t:"tick",k:"freeze",e:"fire",nm:"Scorching Stasis",ch:100,cd:11.0,iv:11.0,r:111,d:1.6},v:{c:"#ff7c54",d:"#711f06",a:"ember",n:2,s:1.38}},"Eclipse Greatblade":{fx:{t:"skill",k:"cdreset",e:"shadow",nm:"Umbral Echo",ch:36,cd:1.0,p:2.1},v:{c:"#ac84ea",d:"#371769",a:"wisp",n:2,s:0.78}},"Moonthorn Foil":{fx:{t:"skill",k:"freeze",e:"venom",nm:"Venomous Stasis Surge",ch:30,cd:1.0,r:127,d:1.5},v:{c:"#72de3f",d:"#265212",a:"drop2",n:4,s:0.82}},"Whisper of Lace":{fx:{t:"skill",k:"frenzy",e:"shadow",nm:"Umbral Frenzy",ch:44,cd:1.0,p:0.15,d:6},v:{c:"#8e82e9",d:"#211768",a:"wisp",n:2,s:0.97}},"Vesper Needle":{fx:{t:"crit",k:"rain",e:"holy",nm:"Radiant Barrage Fury",ch:48,cd:1.5,p:1.2,n:3},v:{c:"#fffeb2",d:"#908f08",a:"star",n:3,s:1.24}},"Duelist's Epitaph":{fx:{t:"hit",k:"execute",e:"gold",nm:"Gilded Reaping",ch:30,cd:2.0,p:0.16},v:{c:"#ffd95d",d:"#745a06",a:"coin",n:4,s:1.08}},"Frostbite Estoc":{fx:{t:"skill",k:"pull",e:"frost",nm:"Frozen Vortex",ch:39,cd:1.0,p:0.63,r:129},v:{c:"#99f1ff",d:"#077788",a:"flake",n:2,s:0.91}},"Starlit Thrust":{fx:{t:"hit",k:"execute",e:"rune",nm:"Runic Reaping",ch:30,cd:2.0,p:0.19},v:{c:"#85c1ff",d:"#074381",a:"rune",n:2,s:1.39}},"Crimson Waltz":{fx:{t:"tick",k:"rain",e:"blood",nm:"Crimson Barrage",ch:100,cd:15.0,iv:15.0,p:1.76,n:3},v:{c:"#df3b5c",d:"#51111e",a:"drop",n:4,s:1.32}},"Thin Red Line":{fx:{t:"hit",k:"burn",e:"blood",nm:"Crimson Blight",ch:12,cd:2.0,p:0.63,d:4},v:{c:"#df3954",d:"#51111c",a:"drop",n:2,s:1.0}},"Harvest of Sorrows":{fx:{t:"skill",k:"freeze",e:"bone",nm:"Grave Stasis Surge",ch:28,cd:1.0,r:105,d:1.1},v:{c:"#eae0c8",d:"#6a592e",a:"shard",n:4,s:0.77}},"Grim Equinox":{fx:{t:"crit",k:"frenzy",e:"moon",nm:"Lunar Frenzy",ch:41,cd:1.5,p:0.29,d:4},v:{c:"#b2b4ff",d:"#080b90",a:"crescent",n:3,s:1.23}},Gravewind:{fx:{t:"crit",k:"frenzy",e:"bone",nm:"Grave Frenzy",ch:44,cd:1.5,p:0.13,d:7},v:{c:"#dfcbac",d:"#604a2a",a:"shard",n:2,s:0.99}},"Marrow Reaper":{fx:{t:"hit",k:"execute",e:"bone",nm:"Grave Reaping",ch:25,cd:2.0,p:0.16},v:{c:"#e0c4af",d:"#61422a",a:"shard",n:4,s:1.25}},"Pale Horseman's Arc":{fx:{t:"tick",k:"drain",e:"moon",nm:"Lunar Siphon",ch:100,cd:13.0,iv:13.0,p:1.24,r:118},v:{c:"#b2c6ff",d:"#082b90",a:"crescent",n:3,s:0.85}},"Soulreaver's Crescent":{fx:{t:"skill",k:"drain",e:"bone",nm:"Grave Siphon",ch:34,cd:1.0,p:1.17,r:138},v:{c:"#eadac8",d:"#6a4f2e",a:"shard",n:4,s:1.12}},"Last Harvest":{fx:{t:"kill",k:"burn",e:"bone",nm:"Grave Blight",ch:51,cd:0.8,p:0.82,d:6},v:{c:"#eae1c8",d:"#6a5b2e",a:"shard",n:3,s:1.23}},"Bulwark of Penance":{fx:{t:"hit",k:"nova",e:"void",nm:"Void Nova Strike",ch:14,cd:2.0,p:1.54,r:115},v:{c:"#a248ff",d:"#38066d",a:"wisp2",n:2,s:0.75}},"Ward of the Lantern":{fx:{t:"hurt",k:"ward",e:"holy",nm:"Radiant Ward",ch:25,cd:4.0,d:0.9},v:{c:"#fff5a9",d:"#8d7d07",a:"star",n:4,s:0.74}},"Rimeguard Wall":{fx:{t:"hurt",k:"ward",e:"frost",nm:"Frozen Ward",ch:13,cd:4.0,d:1.4},v:{c:"#96efff",d:"#077487",a:"flake",n:4,s:1.2}},"Gargoyle Heart Shield":{fx:{t:"tick",k:"ward",e:"void",nm:"Void Ward",ch:100,cd:15.0,iv:15.0,d:1.5},v:{c:"#c06bff",d:"#480678",a:"wisp2",n:2,s:0.9}},"Iron Penitent's Cross":{fx:{t:"hit",k:"heal",e:"holy",nm:"Radiant Renewal",ch:11,cd:2.0,p:0.026},v:{c:"#ffe6b2",d:"#906308",a:"star",n:3,s:0.72}},"Titan's Oath Aegis":{fx:{t:"hit",k:"heal",e:"rune",nm:"Runic Renewal",ch:11,cd:2.0,p:0.046},v:{c:"#70dbff",d:"#065d7a",a:"rune",n:2,s:0.89}},"Mirror of Mourning":{fx:{t:"crit",k:"freeze",e:"shadow",nm:"Umbral Stasis",ch:38,cd:1.5,r:132,d:1.5},v:{c:"#a877e8",d:"#381664",a:"wisp",n:3,s:1.25}},"Dawnbringer Aegis":{fx:{t:"crit",k:"slow",e:"holy",nm:"Radiant Drag",ch:42,cd:1.5,r:136,d:2},v:{c:"#ffdb8e",d:"#845c07",a:"star",n:3,s:1.03}},"Black Knight's Refusal":{fx:{t:"tick",k:"ward",e:"shadow",nm:"Umbral Ward",ch:100,cd:12.0,iv:12.0,d:1.4},v:{c:"#b497ed",d:"#36196f",a:"wisp",n:3,s:0.81}},"Shield of the Silent Choir":{fx:{t:"tick",k:"barrier",e:"holy",nm:"Radiant Aegis",ch:100,cd:13.0,iv:13.0,p:0.16},v:{c:"#fffc85",d:"#817e07",a:"star",n:3,s:0.9}},"Runeforged Bastion":{fx:{t:"tick",k:"ward",e:"rune",nm:"Runic Ward",ch:100,cd:15.0,iv:15.0,d:0.9},v:{c:"#52c3ff",d:"#064b70",a:"rune",n:4,s:0.71}},"Visor of Ashen Vows":{fx:{t:"kill",k:"gold",e:"fire",nm:"Scorching Tithe",ch:56,cd:0.8,n:16},v:{c:"#ff8833",d:"#662d05",a:"ember",n:3,s:1.08}},"Plague Doctor's Beak":{fx:{t:"kill",k:"barrier",e:"venom",nm:"Venomous Aegis",ch:56,cd:0.8,p:0.15},v:{c:"#99df45",d:"#365413",a:"drop2",n:4,s:1.16}},"Hood of the Vesper Choir":{fx:{t:"kill",k:"gold",e:"holy",nm:"Radiant Tithe",ch:47,cd:0.8,n:27},v:{c:"#fff3b2",d:"#907b08",a:"star",n:4,s:1.15}},"Wolfskull Helm":{fx:{t:"hurt",k:"nova",e:"bone",nm:"Grave Nova",ch:21,cd:4.0,p:1.16,r:112},v:{c:"#dfceae",d:"#614e2a",a:"shard",n:4,s:1.3}},"Crown of the Frostbitten King":{fx:{t:"kill",k:"chain",e:"frost",nm:"Frozen Chain",ch:43,cd:0.8,p:0.95,n:3},v:{c:"#9edfff",d:"#075e89",a:"flake",n:2,s:0.73}},"Gargoyle Visage":{fx:{t:"kill",k:"xp",e:"storm",nm:"Storm Insight",ch:57,cd:0.8,p:0.34},v:{c:"#ffd65b",d:"#735806",a:"spark",n:4,s:1.32}},"Helm of the Black Knight":{fx:{t:"tick",k:"rain",e:"shadow",nm:"Umbral Barrage Pulse",ch:100,cd:11.0,iv:11.0,p:1.01,n:4},v:{c:"#a18deb",d:"#2a186c",a:"wisp",n:3,s:1.14}},"Dragonsworn Casque":{fx:{t:"hurt",k:"thorns",e:"wyrm",nm:"Wyrmfire Retribution",ch:23,cd:4.0,p:1.3,r:87},v:{c:"#ff8941",d:"#6a2c06",a:"ember2",n:3,s:1.19}},"Eclipse Diadem":{fx:{t:"skill",k:"chain",e:"shadow",nm:"Umbral Chain Surge",ch:35,cd:1.0,p:0.99,n:4},v:{c:"#725be3",d:"#20145b",a:"wisp",n:2,s:0.87}},"Cowl of Whispers":{fx:{t:"kill",k:"gold",e:"shadow",nm:"Umbral Tithe",ch:49,cd:0.8,n:51},v:{c:"#b87fe9",d:"#421767",a:"wisp",n:3,s:1.24}},"Gravedigger's Brim":{fx:{t:"kill",k:"ward",e:"bone",nm:"Grave Ward",ch:54,cd:0.8,d:1.4},v:{c:"#e1cfb1",d:"#624d2b",a:"shard",n:2,s:1.13}},"Marrowbane Skull":{fx:{t:"kill",k:"xp",e:"bone",nm:"Grave Insight",ch:30,cd:0.8,p:0.59},v:{c:"#e4ccb9",d:"#65462c",a:"shard",n:2,s:0.71}},"Crown of Hollow Bells":{fx:{t:"crit",k:"cdreset",e:"gale",nm:"Gale Echo",ch:46,cd:1.5,p:2.4},v:{c:"#99ead0",d:"#1c6c52",a:"swirl",n:2,s:0.91}},"Starforged Greathelm":{fx:{t:"hurt",k:"mana",e:"rune",nm:"Runic Wellspring",ch:14,cd:4.0,p:0.086},v:{c:"#457eff",d:"#06256c",a:"rune",n:3,s:0.7}},"Mask of the Mourning Widow":{fx:{t:"hit",k:"mana",e:"blood",nm:"Crimson Wellspring",ch:8,cd:2.0,p:0.059},v:{c:"#e0423f",d:"#531312",a:"drop",n:3,s:1.34}},"Veil of the Night Merchant":{fx:{t:"crit",k:"heal",e:"shadow",nm:"Umbral Renewal Fury",ch:31,cd:1.5,p:0.043},v:{c:"#b78eeb",d:"#3d186c",a:"wisp",n:4,s:1.3}},"Stormcaller's Circlet":{fx:{t:"hurt",k:"thorns",e:"storm",nm:"Storm Retribution",ch:19,cd:4.0,p:1.27,r:109},v:{c:"#ffc852",d:"#704e06",a:"spark",n:4,s:0.75}},Cinderplate:{fx:{t:"crit",k:"freeze",e:"fire",nm:"Scorching Stasis Fury",ch:31,cd:1.5,r:112,d:1.4},v:{c:"#ff9259",d:"#722b06",a:"ember",n:2,s:1.27}},"Plaguebearer's Garb":{fx:{t:"hurt",k:"heal",e:"venom",nm:"Venomous Renewal",ch:18,cd:4.0,p:0.059},v:{c:"#90de3d",d:"#335112",a:"drop2",n:3,s:0.98}},"Mail of the Long Night":{fx:{t:"skill",k:"freeze",e:"shadow",nm:"Umbral Stasis Surge",ch:41,cd:1.0,r:137,d:1.8},v:{c:"#9665e4",d:"#31155e",a:"wisp",n:4,s:1.21}},"Robe of the Vesper Choir":{fx:{t:"kill",k:"ward",e:"holy",nm:"Radiant Ward Harvest",ch:58,cd:0.8,d:1.0},v:{c:"#fffdb2",d:"#908d08",a:"star",n:3,s:0.98}},"Widow's Weeds":{fx:{t:"tick",k:"ward",e:"blood",nm:"Crimson Ward",ch:100,cd:11.0,iv:11.0,d:0.8},v:{c:"#e24f57",d:"#581317",a:"drop",n:2,s:1.19}},"Ironwolf Hauberk":{fx:{t:"crit",k:"heal",e:"moon",nm:"Lunar Renewal",ch:48,cd:1.5,p:0.058},v:{c:"#b2caff",d:"#083190",a:"crescent",n:4,s:0.74}},"Frostbound Cuirass":{fx:{t:"hit",k:"heal",e:"frost",nm:"Frozen Renewal",ch:9,cd:2.0,p:0.038},v:{c:"#8ac1ff",d:"#074183",a:"flake",n:2,s:1.39}},"Gargoyle Scale":{fx:{t:"hurt",k:"nova",e:"gold",nm:"Gilded Nova",ch:14,cd:4.0,p:2.19,r:114},v:{c:"#ffd96e",d:"#795b06",a:"coin",n:3,s:0.84}},"Dragonsworn Mail":{fx:{t:"crit",k:"freeze",e:"wyrm",nm:"Wyrmfire Stasis",ch:39,cd:1.5,r:82,d:1.1},v:{c:"#ff8b3e",d:"#692d06",a:"ember2",n:2,s:0.74}},"Mantle of the Eclipse":{fx:{t:"hurt",k:"nova",e:"shadow",nm:"Umbral Nova",ch:13,cd:4.0,p:2.32,r:77},v:{c:"#a796ed",d:"#29196f",a:"wisp",n:3,s:0.86}},"Gilded Brigandine":{fx:{t:"hurt",k:"thorns",e:"gold",nm:"Gilded Retribution",ch:17,cd:4.0,p:1.58,r:71},v:{c:"#ffe258",d:"#725f06",a:"coin",n:2,s:0.78}},"Soulreaver Shroud":{fx:{t:"kill",k:"heal",e:"bone",nm:"Grave Renewal",ch:59,cd:0.8,p:0.061},v:{c:"#e5d0bb",d:"#66492c",a:"shard",n:2,s:0.7}},"Titan's Bastion":{fx:{t:"kill",k:"heal",e:"rune",nm:"Runic Renewal Harvest",ch:58,cd:0.8,p:0.089},v:{c:"#92baff",d:"#073685",a:"rune",n:3,s:0.78}},"Runeforged Breastplate":{fx:{t:"tick",k:"nova",e:"rune",nm:"Runic Nova",ch:100,cd:10.0,iv:10.0,p:2.52,r:93},v:{c:"#7daeff",d:"#07347e",a:"rune",n:4,s:0.79}},"Voidwalker Raiment":{fx:{t:"hurt",k:"ward",e:"void",nm:"Void Ward Reprisal",ch:22,cd:4.0,d:1.2},v:{c:"#e378ff",d:"#64077d",a:"wisp2",n:3,s:1.04}},"Starforged Cuirass":{fx:{t:"kill",k:"nova",e:"rune",nm:"Runic Nova Harvest",ch:41,cd:0.8,p:2.7,r:103},v:{c:"#59a0ff",d:"#063472",a:"rune",n:2,s:0.88}},"Worldbreaker Carapace":{fx:{t:"hurt",k:"revive",e:"wyrm",nm:"Wyrmfire Second Life",ch:100,cd:136.0,p:0.36},v:{c:"#ff6222",d:"#601f05",a:"ember2",n:2,s:0.89}},"Primordial Scale":{fx:{t:"crit",k:"barrier",e:"wyrm",nm:"Wyrmfire Aegis",ch:41,cd:1.5,p:0.11},v:{c:"#ff5a30",d:"#651905",a:"ember2",n:2,s:0.94}},"Gravedigger's Grip":{fx:{t:"hurt",k:"haste",e:"bone",nm:"Grave Haste",ch:19,cd:4.0,p:0.23,d:6},v:{c:"#ddcaa7",d:"#5f4c29",a:"shard",n:4,s:0.98}},"Ratcatcher's Snare":{fx:{t:"crit",k:"haste",e:"venom",nm:"Venomous Haste",ch:49,cd:1.5,p:0.24,d:3},v:{c:"#a9e04d",d:"#3d5613",a:"drop2",n:2,s:1.28}},"Fists of the Iron Wolf":{fx:{t:"crit",k:"cdreset",e:"storm",nm:"Storm Echo Fury",ch:35,cd:1.5,p:1.6},v:{c:"#ffd75c",d:"#745906",a:"spark",n:4,s:1.13}},"Plague Hands":{fx:{t:"hit",k:"chain",e:"venom",nm:"Venomous Chain",ch:8,cd:2.0,p:1.01,n:2},v:{c:"#c3e35c",d:"#4a5b14",a:"drop2",n:2,s:0.82}},"Stormcaller Gauntlets":{fx:{t:"hurt",k:"nova",e:"storm",nm:"Storm Nova",ch:24,cd:4.0,p:2.02,r:103},v:{c:"#ffc630",d:"#654a05",a:"spark",n:3,s:1.06}},"Gauntlets of the Black Knight":{fx:{t:"skill",k:"nova",e:"shadow",nm:"Umbral Nova Surge",ch:33,cd:1.0,p:1.25,r:99},v:{c:"#a56ae5",d:"#391560",a:"wisp",n:3,s:0.89}},"Widow's Embrace":{fx:{t:"kill",k:"mana",e:"blood",nm:"Crimson Wellspring Harvest",ch:52,cd:0.8,p:0.092},v:{c:"#db2465",d:"#491024",a:"drop",n:3,s:1.28}},"Starforged Fists":{fx:{t:"hit",k:"frenzy",e:"rune",nm:"Runic Frenzy",ch:10,cd:2.0,p:0.2,d:6},v:{c:"#4687ff",d:"#06296c",a:"rune",n:4,s:1.1}},"Dragonclaw Grips":{fx:{t:"kill",k:"rain",e:"wyrm",nm:"Wyrmfire Barrage",ch:32,cd:0.8,p:1.48,n:4},v:{c:"#ff7a0f",d:"#5a2b05",a:"ember2",n:2,s:0.85}},"Galedancer Wraps":{fx:{t:"crit",k:"frenzy",e:"gale",nm:"Gale Frenzy",ch:48,cd:1.5,p:0.19,d:4},v:{c:"#c0f2ed",d:"#1f7971",a:"swirl",n:4,s:1.22}},"Soulreaver Talons":{fx:{t:"crit",k:"cdreset",e:"bone",nm:"Grave Echo Fury",ch:49,cd:1.5,p:1.3},v:{c:"#e4d4ba",d:"#654f2c",a:"shard",n:4,s:1.05}},"Runeforged Gauntlets":{fx:{t:"kill",k:"gold",e:"rune",nm:"Runic Tithe",ch:36,cd:0.8,n:51},v:{c:"#7badff",d:"#07347e",a:"rune",n:4,s:0.88}},"Void Touch":{fx:{t:"kill",k:"chain",e:"void",nm:"Void Chain",ch:60,cd:0.8,p:1.14,n:5},v:{c:"#e77cff",d:"#68077e",a:"wisp2",n:4,s:0.9}},"Gloves of the Night Merchant":{fx:{t:"tick",k:"drain",e:"shadow",nm:"Umbral Siphon",ch:100,cd:14.0,iv:14.0,p:1.08,r:118},v:{c:"#b99bee",d:"#391970",a:"wisp",n:2,s:0.84}},"Penitent's Manacles":{fx:{t:"crit",k:"frenzy",e:"holy",nm:"Radiant Frenzy",ch:41,cd:1.5,p:0.22,d:5},v:{c:"#feffa9",d:"#8b8d07",a:"star",n:2,s:1.13}},"Bogwalker Treads":{fx:{t:"skill",k:"pull",e:"venom",nm:"Venomous Vortex",ch:28,cd:1.0,p:0.61,r:170},v:{c:"#a2dd39",d:"#395012",a:"drop2",n:3,s:0.75}},"Gale Dancer's Steps":{fx:{t:"kill",k:"ward",e:"gale",nm:"Gale Ward",ch:53,cd:0.8,d:1.4},v:{c:"#a0ebc7",d:"#1c6e46",a:"swirl",n:3,s:1.1}},"Ironwolf Stompers":{fx:{t:"crit",k:"freeze",e:"moon",nm:"Lunar Stasis",ch:45,cd:1.5,r:121,d:1.6},v:{c:"#b2c5ff",d:"#082990",a:"crescent",n:2,s:0.99}},"Mourner's Slippers":{fx:{t:"crit",k:"haste",e:"shadow",nm:"Umbral Haste",ch:39,cd:1.5,p:0.22,d:5},v:{c:"#b97ae8",d:"#441765",a:"wisp",n:4,s:0.96}},"Boots of the Long Road":{fx:{t:"tick",k:"ward",e:"moon",nm:"Lunar Ward",ch:100,cd:16.0,iv:16.0,d:1.4},v:{c:"#b2d4ff",d:"#084490",a:"crescent",n:3,s:0.81}},"Voidstep Sabatons":{fx:{t:"hurt",k:"thorns",e:"void",nm:"Void Retribution",ch:22,cd:4.0,p:1.33,r:85},v:{c:"#a669ff",d:"#340678",a:"wisp2",n:2,s:1.35}},"Eclipse Sandals":{fx:{t:"kill",k:"haste",e:"shadow",nm:"Umbral Haste Harvest",ch:44,cd:0.8,p:0.19,d:7},v:{c:"#9c73e7",d:"#311663",a:"wisp",n:4,s:0.75}},"Titan's March":{fx:{t:"kill",k:"ward",e:"rune",nm:"Runic Ward Harvest",ch:32,cd:0.8,d:1.5},v:{c:"#92d8ff",d:"#075885",a:"rune",n:3,s:0.73}},"Dragonsworn Greaves":{fx:{t:"skill",k:"pull",e:"wyrm",nm:"Wyrmfire Vortex",ch:32,cd:1.0,p:1.06,r:122},v:{c:"#ff8339",d:"#682a05",a:"ember2",n:3,s:1.37}},"Rimeguard Sabatons":{fx:{t:"hurt",k:"thorns",e:"frost",nm:"Frozen Retribution",ch:12,cd:4.0,p:1.11,r:104},v:{c:"#8fecff",d:"#076f84",a:"flake",n:4,s:0.9}},"Black Knight's Tread":{fx:{t:"hurt",k:"freeze",e:"shadow",nm:"Umbral Stasis Reprisal",ch:12,cd:4.0,r:115,d:1.3},v:{c:"#a16ee6",d:"#361661",a:"wisp",n:4,s:0.72}},Stormtreader:{fx:{t:"crit",k:"haste",e:"storm",nm:"Storm Haste",ch:44,cd:1.5,p:0.32,d:6},v:{c:"#ffe249",d:"#6d5d06",a:"spark",n:3,s:1.1}},"Ashwalker Boots":{fx:{t:"skill",k:"haste",e:"gold",nm:"Gilded Haste",ch:40,cd:1.0,p:0.19,d:6},v:{c:"#ffeb53",d:"#706406",a:"coin",n:3,s:1.32}},"Wolfhunter Boots":{fx:{t:"tick",k:"freeze",e:"gale",nm:"Gale Stasis",ch:100,cd:16.0,iv:16.0,r:132,d:1.5},v:{c:"#c0f2e4",d:"#1f7960",a:"swirl",n:3,s:1.19}},"Starforged Greaves":{fx:{t:"tick",k:"freeze",e:"rune",nm:"Runic Stasis",ch:100,cd:11.0,iv:11.0,r:138,d:1.6},v:{c:"#93bfff",d:"#073a86",a:"rune",n:2,s:0.8}},"Band of the Candle":{fx:{t:"skill",k:"chain",e:"holy",nm:"Radiant Chain Surge",ch:28,cd:1.0,p:0.74,n:2},v:{c:"#ffe3ae",d:"#8f5f08",a:"star",n:3,s:1.14}},"Widow's Ring":{fx:{t:"crit",k:"burn",e:"blood",nm:"Crimson Blight Fury",ch:39,cd:1.5,p:0.34,d:4},v:{c:"#e56190",d:"#5e142e",a:"drop",n:3,s:0.96}},"Signet of the Ratcatcher":{fx:{t:"skill",k:"rain",e:"venom",nm:"Venomous Barrage Surge",ch:39,cd:1.0,p:0.93,n:3},v:{c:"#b4e461",d:"#435d15",a:"drop2",n:4,s:1.25}},"Ring of Mourning Bells":{fx:{t:"kill",k:"frenzy",e:"shadow",nm:"Umbral Frenzy Harvest",ch:39,cd:0.8,p:0.29,d:5},v:{c:"#957fe9",d:"#271767",a:"wisp",n:4,s:1.33}},"Ashen Crusader's Seal":{fx:{t:"crit",k:"mana",e:"fire",nm:"Scorching Wellspring",ch:50,cd:1.5,p:0.106},v:{c:"#ff844f",d:"#6f2606",a:"ember",n:3,s:0.75}},"Cinder Loop":{fx:{t:"tick",k:"rain",e:"fire",nm:"Scorching Barrage",ch:100,cd:16.0,iv:16.0,p:0.95,n:4},v:{c:"#ff965f",d:"#742c06",a:"ember",n:2,s:1.26}},"Eclipse Ring of Sorrows":{fx:{t:"skill",k:"drain",e:"shadow",nm:"Umbral Siphon Surge",ch:27,cd:1.0,p:1.2,r:143},v:{c:"#b889eb",d:"#3f186a",a:"wisp",n:2,s:0.98}},"Frostbitten Signet":{fx:{t:"crit",k:"cdreset",e:"frost",nm:"Frozen Echo",ch:37,cd:1.5,p:1.3},v:{c:"#6ab6ff",d:"#064078",a:"flake",n:4,s:0.95}},"Loop of the Night Merchant":{fx:{t:"kill",k:"xp",e:"shadow",nm:"Umbral Insight",ch:39,cd:0.8,p:0.37},v:{c:"#bd83ea",d:"#451768",a:"wisp",n:2,s:0.74}},"Voidwalker's Band":{fx:{t:"hurt",k:"revive",e:"void",nm:"Void Second Life",ch:100,cd:111.0,p:0.47},v:{c:"#b146ff",d:"#41066c",a:"wisp2",n:2,s:0.84}},"Stormcaller Ring":{fx:{t:"kill",k:"frenzy",e:"storm",nm:"Storm Frenzy",ch:34,cd:0.8,p:0.23,d:4},v:{c:"#ffe34c",d:"#6e5e06",a:"spark",n:2,s:0.87}},"Starforged Signet":{fx:{t:"tick",k:"rain",e:"rune",nm:"Runic Barrage Pulse",ch:100,cd:9.0,iv:9.0,p:1.7,n:3},v:{c:"#4c86ff",d:"#06286e",a:"rune",n:3,s:0.96}},"Soulreaver's Seal":{fx:{t:"hurt",k:"mana",e:"bone",nm:"Grave Wellspring",ch:15,cd:4.0,p:0.085},v:{c:"#e5d3bb",d:"#664d2c",a:"shard",n:4,s:1.37}},"Dragonsworn Signet":{fx:{t:"crit",k:"cdreset",e:"wyrm",nm:"Wyrmfire Echo Fury",ch:41,cd:1.5,p:1.9},v:{c:"#ff882d",d:"#642e05",a:"ember2",n:3,s:0.73}},"Ring of Gilded Ages":{fx:{t:"tick",k:"drain",e:"gold",nm:"Gilded Siphon",ch:100,cd:16.0,iv:16.0,p:1.09,r:141},v:{c:"#ffba5b",d:"#734506",a:"coin",n:3,s:1.06}},"Moonlit Band":{fx:{t:"skill",k:"haste",e:"moon",nm:"Lunar Haste",ch:28,cd:1.0,p:0.3,d:6},v:{c:"#abc1ff",d:"#072b8e",a:"crescent",n:2,s:1.11}},"Ring of Hollow Vows":{fx:{t:"kill",k:"mana",e:"gale",nm:"Gale Wellspring",ch:56,cd:0.8,p:0.085},v:{c:"#b1efeb",d:"#1e746f",a:"swirl",n:4,s:1.24}},"Runeforged Loop":{fx:{t:"kill",k:"frenzy",e:"rune",nm:"Runic Frenzy Harvest",ch:39,cd:0.8,p:0.15,d:4},v:{c:"#79ccff",d:"#07507d",a:"rune",n:2,s:0.93}},"Locket of the Widow":{fx:{t:"hurt",k:"heal",e:"blood",nm:"Crimson Renewal",ch:22,cd:4.0,p:0.064},v:{c:"#de363f",d:"#501114",a:"drop",n:2,s:1.37}},"Pendant of the Vesper Choir":{fx:{t:"skill",k:"cdreset",e:"holy",nm:"Radiant Echo",ch:36,cd:1.0,p:1.8},v:{c:"#fffdaf",d:"#8f8c08",a:"star",n:4,s:0.72}},"Tooth of the Frozen Wolf":{fx:{t:"kill",k:"xp",e:"frost",nm:"Frozen Insight",ch:33,cd:0.8,p:0.37},v:{c:"#b2f5ff",d:"#087f90",a:"flake",n:3,s:0.73}},"Rosary of Ashen Vows":{fx:{t:"kill",k:"xp",e:"fire",nm:"Scorching Insight",ch:59,cd:0.8,p:0.58},v:{c:"#ff6e34",d:"#662105",a:"ember",n:4,s:1.17}},"Eye of the Seer":{fx:{t:"tick",k:"heal",e:"frost",nm:"Frozen Renewal Pulse",ch:100,cd:12.0,iv:12.0,p:0.094},v:{c:"#76b7ff",d:"#073e7c",a:"flake",n:3,s:1.39}},"Amulet of Plagues":{fx:{t:"tick",k:"barrier",e:"venom",nm:"Venomous Aegis Pulse",ch:100,cd:12.0,iv:12.0,p:0.15},v:{c:"#afe35b",d:"#405b14",a:"drop2",n:3,s:0.77}},"Charm of the Gilded Hand":{fx:{t:"tick",k:"freeze",e:"gold",nm:"Gilded Stasis Pulse",ch:100,cd:16.0,iv:16.0,r:98,d:1.8},v:{c:"#ffe260",d:"#756106",a:"coin",n:4,s:0.97}},"Heart of the Iron Wolf":{fx:{t:"kill",k:"chain",e:"moon",nm:"Lunar Chain",ch:41,cd:0.8,p:1.19,n:5},v:{c:"#b2d4ff",d:"#084490",a:"crescent",n:3,s:0.88}},"Starforged Talisman":{fx:{t:"hurt",k:"revive",e:"rune",nm:"Runic Second Life",ch:100,cd:120.0,p:0.38},v:{c:"#82cbff",d:"#074e80",a:"rune",n:3,s:1.18}},"Dragonsworn Fang":{fx:{t:"crit",k:"burn",e:"wyrm",nm:"Wyrmfire Blight",ch:40,cd:1.5,p:0.45,d:5},v:{c:"#ff5f0c",d:"#592205",a:"ember2",n:3,s:1.29}},"Soulreaver's Phylactery":{fx:{t:"hit",k:"chain",e:"bone",nm:"Grave Chain",ch:9,cd:2.0,p:1.31,n:3},v:{c:"#e7dac2",d:"#68532d",a:"shard",n:3,s:1.01}},"Frost Seer's Tear":{fx:{t:"kill",k:"gold",e:"frost",nm:"Frozen Tithe",ch:45,cd:0.8,n:63},v:{c:"#7cecff",d:"#076c7e",a:"flake",n:4,s:1.25}},"Void Locket":{fx:{t:"crit",k:"barrier",e:"void",nm:"Void Aegis",ch:38,cd:1.5,p:0.14},v:{c:"#e05eff",d:"#5f0674",a:"wisp2",n:4,s:1.36}},"Eclipse Necklace":{fx:{t:"tick",k:"barrier",e:"shadow",nm:"Umbral Aegis",ch:100,cd:9.0,iv:9.0,p:0.08},v:{c:"#b59aee",d:"#351970",a:"wisp",n:4,s:0.92}},"Bellringer's Medal":{fx:{t:"hurt",k:"freeze",e:"storm",nm:"Storm Stasis",ch:13,cd:4.0,r:82,d:1.5},v:{c:"#f8ff4d",d:"#6a6e06",a:"spark",n:3,s:0.92}},"Titan's Heart":{fx:{t:"hit",k:"burn",e:"rune",nm:"Runic Blight",ch:13,cd:2.0,p:0.52,d:6},v:{c:"#84a9ff",d:"#072b81",a:"rune",n:4,s:0.86}},"Phoenix Ember":{fx:{t:"hit",k:"burn",e:"fire",nm:"Scorching Blight",ch:10,cd:2.0,p:0.71,d:4},v:{c:"#ffbb4a",d:"#6e4606",a:"ember",n:3,s:1.1}},"Gravedigger's Rope":{fx:{t:"tick",k:"heal",e:"bone",nm:"Grave Renewal Pulse",ch:100,cd:16.0,iv:16.0,p:0.058},v:{c:"#eae2c8",d:"#6a5d2e",a:"shard",n:2,s:1.08}},"Ratcatcher Sash":{fx:{t:"kill",k:"mana",e:"venom",nm:"Venomous Wellspring",ch:40,cd:0.8,p:0.118},v:{c:"#77db2d",d:"#2a4c11",a:"drop2",n:4,s:1.01}},"Bog Wanderer Belt":{fx:{t:"kill",k:"nova",e:"venom",nm:"Venomous Nova",ch:36,cd:0.8,p:1.1,r:75},v:{c:"#a3e14d",d:"#3a5613",a:"drop2",n:4,s:1.14}},"Belt of the Iron Wolf":{fx:{t:"kill",k:"gold",e:"gale",nm:"Gale Tithe",ch:41,cd:0.8,n:33},v:{c:"#c0f2ef",d:"#1f7974",a:"swirl",n:3,s:1.02}},"Titan's Girdle":{fx:{t:"crit",k:"barrier",e:"rune",nm:"Runic Aegis",ch:47,cd:1.5,p:0.12},v:{c:"#91e1ff",d:"#076385",a:"rune",n:2,s:0.72}},"Lantern Warden's Cincture":{fx:{t:"kill",k:"xp",e:"holy",nm:"Radiant Insight",ch:59,cd:0.8,p:0.29},v:{c:"#ffe8b2",d:"#906808",a:"star",n:2,s:1.32}},"Dragonsworn Cincture":{fx:{t:"skill",k:"nova",e:"wyrm",nm:"Wyrmfire Nova",ch:32,cd:1.0,p:2.08,r:74},v:{c:"#ff522c",d:"#641605",a:"ember2",n:2,s:0.88}},"Rimeguard Girdle":{fx:{t:"kill",k:"ward",e:"frost",nm:"Frozen Ward Harvest",ch:31,cd:0.8,d:0.9},v:{c:"#9fd8ff",d:"#07558a",a:"flake",n:3,s:1.33}},"Gilded Sash":{fx:{t:"hit",k:"heal",e:"gold",nm:"Gilded Renewal",ch:14,cd:2.0,p:0.041},v:{c:"#ffd158",d:"#725406",a:"coin",n:2,s:1.05}},"Runeforged Belt":{fx:{t:"hit",k:"nova",e:"rune",nm:"Runic Nova Strike",ch:10,cd:2.0,p:1.48,r:97},v:{c:"#4cb5ff",d:"#06436e",a:"rune",n:4,s:0.76}},"Worldbreaker Belt":{fx:{t:"kill",k:"barrier",e:"wyrm",nm:"Wyrmfire Aegis Harvest",ch:52,cd:0.8,p:0.08},v:{c:"#ff594c",d:"#6e0d06",a:"ember2",n:4,s:1.38}},"Cord of the Crypt Keeper":{fx:{t:"kill",k:"barrier",e:"bone",nm:"Grave Aegis",ch:45,cd:0.8,p:0.1},v:{c:"#e9dfc6",d:"#69582e",a:"shard",n:2,s:0.73}},"Thornwood Sash":{fx:{t:"crit",k:"nova",e:"venom",nm:"Venomous Nova Fury",ch:39,cd:1.5,p:1.85,r:77},v:{c:"#74dd38",d:"#284f12",a:"drop2",n:2,s:0.92}},"Belt of Lost Pilgrims":{fx:{t:"hit",k:"mana",e:"holy",nm:"Radiant Wellspring",ch:8,cd:2.0,p:0.041},v:{c:"#fffbb2",d:"#908908",a:"star",n:4,s:1.34}},"Starforged Cincture":{fx:{t:"kill",k:"xp",e:"rune",nm:"Runic Insight",ch:36,cd:0.8,p:0.38},v:{c:"#89abff",d:"#072b82",a:"rune",n:2,s:1.24}},"Voidwalker Sash":{fx:{t:"tick",k:"heal",e:"void",nm:"Void Renewal",ch:100,cd:14.0,iv:14.0,p:0.056},v:{c:"#9a51ff",d:"#320670",a:"wisp2",n:3,s:1.02}},"Sash of the Duelist":{fx:{t:"kill",k:"haste",e:"gold",nm:"Gilded Haste Harvest",ch:45,cd:0.8,p:0.2,d:3},v:{c:"#ffd44f",d:"#6f5506",a:"coin",n:4,s:1.31}}},S:{pilgrim:{fx:[{t:"hit",k:"burn",e:"holy",nm:"Radiant Blight",ch:13,cd:2.0,p:0.4,d:6,at:2},{t:"hit",k:"nova",e:"holy",nm:"Radiant Nova Strike",ch:14,cd:2.0,p:0.85,r:88,at:4}],v:{c:"#fffeb2",d:"#908f08",a:"star",n:2,s:0.87}},warden:{fx:[{t:"hurt",k:"thorns",e:"gale",nm:"Gale Retribution",ch:15,cd:4.0,p:1.4,r:94,at:3},{t:"crit",k:"cdreset",e:"moon",nm:"Lunar Echo",ch:31,cd:1.5,p:1.5,at:5}],v:{c:"#b2cdff",d:"#083890",a:"crescent",n:2,s:1.3}},stalker:{fx:[{t:"hit",k:"mana",e:"shadow",nm:"Umbral Wellspring",ch:8,cd:2.0,p:0.031,at:3},{t:"kill",k:"burn",e:"shadow",nm:"Umbral Blight Harvest",ch:55,cd:0.8,p:0.38,d:4,at:5}],v:{c:"#9a6de6",d:"#321661",a:"wisp",n:2,s:0.75}},tempest:{fx:[{t:"kill",k:"haste",e:"storm",nm:"Storm Haste Harvest",ch:30,cd:0.8,p:0.24,d:5,at:3},{t:"hit",k:"chain",e:"storm",nm:"Storm Chain",ch:12,cd:2.0,p:0.97,n:5,at:5}],v:{c:"#ffff5a",d:"#737306",a:"spark",n:2,s:0.77}},crimson:{fx:[{t:"hit",k:"frenzy",e:"blood",nm:"Crimson Frenzy",ch:12,cd:2.0,p:0.22,d:6,at:4},{t:"tick",k:"mana",e:"blood",nm:"Crimson Wellspring Pulse",ch:100,cd:11.0,iv:11.0,p:0.058,at:6}],v:{c:"#e35188",d:"#59132d",a:"drop",n:2,s:1.28}},glacial:{fx:[{t:"tick",k:"ward",e:"frost",nm:"Frozen Ward Pulse",ch:100,cd:14.0,iv:14.0,d:1.6,at:3},{t:"hit",k:"chain",e:"frost",nm:"Frozen Chain Strike",ch:8,cd:2.0,p:1.07,n:3,at:5}],v:{c:"#96e3ff",d:"#076487",a:"flake",n:2,s:1.28}},wyrmbane:{fx:[{t:"kill",k:"gold",e:"wyrm",nm:"Wyrmfire Tithe",ch:44,cd:0.8,n:30,at:4},{t:"kill",k:"nova",e:"wyrm",nm:"Wyrmfire Nova Harvest",ch:53,cd:0.8,p:1.59,r:95,at:6}],v:{c:"#ff4e36",d:"#671105",a:"ember2",n:2,s:0.75}},hollowking:{fx:[{t:"hurt",k:"thorns",e:"moon",nm:"Lunar Retribution",ch:18,cd:4.0,p:1.2,r:91,at:5},{t:"crit",k:"haste",e:"void",nm:"Void Haste",ch:34,cd:1.5,p:0.23,d:4,at:7}],v:{c:"#d051ff",d:"#530670",a:"wisp2",n:2,s:0.95}},gravedigger2:{fx:[{t:"crit",k:"chain",e:"bone",nm:"Grave Chain Fury",ch:45,cd:1.5,p:1.04,n:2,at:2},{t:"hurt",k:"freeze",e:"bone",nm:"Grave Stasis Reprisal",ch:22,cd:4.0,r:137,d:1.0,at:4}],v:{c:"#e4d1b9",d:"#654c2c",a:"shard",n:2,s:0.77}},acolyte3:{fx:[{t:"hurt",k:"pull",e:"holy",nm:"Radiant Vortex Reprisal",ch:24,cd:4.0,p:0.68,r:148,at:2},{t:"kill",k:"frenzy",e:"holy",nm:"Radiant Frenzy Harvest",ch:54,cd:0.8,p:0.23,d:4,at:4}],v:{c:"#fff6a5",d:"#8c7f07",a:"star",n:2,s:1.29}},ratcatcher4:{fx:[{t:"skill",k:"nova",e:"venom",nm:"Venomous Nova Surge",ch:36,cd:1.0,p:0.98,r:96,at:3},{t:"hurt",k:"slow",e:"venom",nm:"Venomous Drag",ch:15,cd:4.0,r:130,d:4,at:5}],v:{c:"#91df42",d:"#335312",a:"drop2",n:2,s:0.85}},keeper5:{fx:[{t:"kill",k:"chain",e:"bone",nm:"Grave Chain Harvest",ch:47,cd:0.8,p:0.82,n:3,at:3},{t:"hurt",k:"ward",e:"bone",nm:"Grave Ward Reprisal",ch:13,cd:4.0,d:1.1,at:5}],v:{c:"#eadfc8",d:"#6a582e",a:"shard",n:2,s:1.25}},bogwalker5:{fx:[{t:"skill",k:"drain",e:"venom",nm:"Venomous Siphon",ch:27,cd:1.0,p:0.74,r:146,at:2},{t:"kill",k:"burn",e:"venom",nm:"Venomous Blight",ch:42,cd:0.8,p:0.35,d:6,at:4}],v:{c:"#8ee04c",d:"#315613",a:"drop2",n:2,s:0.73}},penitent6:{fx:[{t:"hit",k:"execute",e:"holy",nm:"Radiant Reaping",ch:31,cd:2.0,p:0.15,at:4},{t:"kill",k:"barrier",e:"holy",nm:"Radiant Aegis Harvest",ch:47,cd:0.8,p:0.08,at:6}],v:{c:"#ffea9a",d:"#886d07",a:"star",n:2,s:1.07}},gargoyle7:{fx:[{t:"hit",k:"frenzy",e:"gale",nm:"Gale Frenzy Strike",ch:8,cd:2.0,p:0.18,d:6,at:3},{t:"hurt",k:"freeze",e:"moon",nm:"Lunar Stasis Reprisal",ch:12,cd:4.0,r:99,d:1.3,at:5}],v:{c:"#afbbff",d:"#081d8f",a:"crescent",n:2,s:0.76}},plaguebearer7:{fx:[{t:"hit",k:"burn",e:"venom",nm:"Venomous Blight Strike",ch:10,cd:2.0,p:0.55,d:5,at:3},{t:"hurt",k:"revive",e:"venom",nm:"Venomous Second Life",ch:100,cd:133.0,p:0.36,at:5}],v:{c:"#83e049",d:"#2c5513",a:"drop2",n:2,s:1.22}},vesper8:{fx:[{t:"skill",k:"rain",e:"holy",nm:"Radiant Barrage Surge",ch:41,cd:1.0,p:1.3,n:3,at:3},{t:"skill",k:"frenzy",e:"holy",nm:"Radiant Frenzy Surge",ch:38,cd:1.0,p:0.3,d:7,at:5}],v:{c:"#ffffb2",d:"#8f9008",a:"star",n:2,s:0.92}},widow8:{fx:[{t:"hurt",k:"freeze",e:"blood",nm:"Crimson Stasis",ch:21,cd:4.0,r:118,d:1.5,at:3},{t:"hit",k:"chain",e:"blood",nm:"Crimson Chain",ch:13,cd:2.0,p:1.31,n:4,at:5}],v:{c:"#e2504a",d:"#571512",a:"drop",n:2,s:0.75}},bloodhound9:{fx:[{t:"kill",k:"xp",e:"blood",nm:"Crimson Insight",ch:46,cd:0.8,p:0.41,at:3},{t:"hurt",k:"revive",e:"blood",nm:"Crimson Second Life",ch:100,cd:131.0,p:0.39,at:5}],v:{c:"#df3a4b",d:"#511118",a:"drop",n:2,s:0.86}},lantern9:{fx:[{t:"hurt",k:"mana",e:"holy",nm:"Radiant Wellspring Reprisal",ch:13,cd:4.0,p:0.103,at:2},{t:"hurt",k:"heal",e:"holy",nm:"Radiant Renewal Reprisal",ch:15,cd:4.0,p:0.053,at:4}],v:{c:"#fffda8",d:"#8d8a07",a:"star",n:2,s:0.95}},cinder10:{fx:[{t:"kill",k:"barrier",e:"fire",nm:"Scorching Aegis",ch:49,cd:0.8,p:0.12,at:3},{t:"crit",k:"heal",e:"fire",nm:"Scorching Renewal",ch:45,cd:1.5,p:0.091,at:5}],v:{c:"#ff8258",d:"#722106",a:"ember",n:2,s:1.07}},marrowbane10:{fx:[{t:"crit",k:"barrier",e:"bone",nm:"Grave Aegis Fury",ch:42,cd:1.5,p:0.12,at:3},{t:"hit",k:"pull",e:"bone",nm:"Grave Vortex",ch:10,cd:2.0,p:0.45,r:115,at:5}],v:{c:"#eae6c8",d:"#6a632e",a:"shard",n:2,s:1.28}},moonlit11:{fx:[{t:"hurt",k:"nova",e:"moon",nm:"Lunar Nova",ch:14,cd:4.0,p:1.34,r:77,at:3},{t:"kill",k:"mana",e:"moon",nm:"Lunar Wellspring",ch:56,cd:0.8,p:0.109,at:5}],v:{c:"#b2c8ff",d:"#082f90",a:"crescent",n:2,s:0.86}},thornwood11:{fx:[{t:"hit",k:"pull",e:"venom",nm:"Venomous Vortex Strike",ch:12,cd:2.0,p:0.51,r:147,at:4},{t:"tick",k:"nova",e:"venom",nm:"Venomous Nova Pulse",ch:100,cd:12.0,iv:12.0,p:1.15,r:71,at:6}],v:{c:"#79de40",d:"#295212",a:"drop2",n:2,s:1.02}},rimeguard12:{fx:[{t:"skill",k:"freeze",e:"frost",nm:"Frozen Stasis",ch:34,cd:1.0,r:93,d:1.1,at:3},{t:"skill",k:"cdreset",e:"frost",nm:"Frozen Echo Surge",ch:38,cd:1.0,p:1.7,at:5}],v:{c:"#8eedff",d:"#077084",a:"flake",n:2,s:1.12}},pyre12:{fx:[{t:"hurt",k:"slow",e:"fire",nm:"Scorching Drag Reprisal",ch:14,cd:4.0,r:137,d:4,at:4},{t:"hit",k:"pull",e:"fire",nm:"Scorching Vortex Strike",ch:12,cd:2.0,p:0.51,r:126,at:6}],v:{c:"#ffb453",d:"#704206",a:"ember",n:2,s:1.27}},wraithtide13:{fx:[{t:"kill",k:"frenzy",e:"gold",nm:"Gilded Frenzy",ch:40,cd:0.8,p:0.18,d:5,at:2},{t:"hurt",k:"slow",e:"void",nm:"Void Drag",ch:15,cd:4.0,r:157,d:2,at:4}],v:{c:"#b26fff",d:"#3c067a",a:"wisp2",n:2,s:0.8}},ironwolf13:{fx:[{t:"hit",k:"slow",e:"gold",nm:"Gilded Drag",ch:9,cd:2.0,r:155,d:3,at:4},{t:"tick",k:"mana",e:"storm",nm:"Storm Wellspring",ch:100,cd:10.0,iv:10.0,p:0.058,at:6}],v:{c:"#fff640",d:"#6a6506",a:"spark",n:2,s:1.08}},frostbound14:{fx:[{t:"hit",k:"execute",e:"frost",nm:"Frozen Reaping",ch:28,cd:2.0,p:0.13,at:4},{t:"tick",k:"rain",e:"frost",nm:"Frozen Barrage Pulse",ch:100,cd:16.0,iv:16.0,p:1.05,n:3,at:6}],v:{c:"#8cdaff",d:"#075c83",a:"flake",n:2,s:0.82}},seer14:{fx:[{t:"tick",k:"nova",e:"frost",nm:"Frozen Nova Pulse",ch:100,cd:11.0,iv:11.0,p:1.8,r:102,at:2},{t:"hurt",k:"slow",e:"frost",nm:"Frozen Drag",ch:19,cd:4.0,r:91,d:2,at:4}],v:{c:"#88c4ff",d:"#074582",a:"flake",n:2,s:1.21}},yetibane15:{fx:[{t:"kill",k:"haste",e:"frost",nm:"Frozen Haste Harvest",ch:34,cd:0.8,p:0.28,d:3,at:2},{t:"kill",k:"barrier",e:"frost",nm:"Frozen Aegis",ch:59,cd:0.8,p:0.16,at:4}],v:{c:"#aaceff",d:"#07408d",a:"flake",n:2,s:1.13}},stormcaller15:{fx:[{t:"hurt",k:"revive",e:"storm",nm:"Storm Second Life",ch:100,cd:115.0,p:0.39,at:4},{t:"hit",k:"heal",e:"storm",nm:"Storm Renewal",ch:10,cd:2.0,p:0.024,at:6}],v:{c:"#ffd43f",d:"#6a5306",a:"spark",n:2,s:0.78}},blackguard16:{fx:[{t:"skill",k:"pull",e:"shadow",nm:"Umbral Vortex",ch:39,cd:1.0,p:0.91,r:127,at:4},{t:"crit",k:"slow",e:"shadow",nm:"Umbral Drag Fury",ch:33,cd:1.5,r:134,d:4,at:6}],v:{c:"#b082e9",d:"#3b1768",a:"wisp",n:2,s:1.09}},gilded16:{fx:[{t:"crit",k:"burn",e:"shadow",nm:"Umbral Blight Fury",ch:38,cd:1.5,p:0.61,d:4,at:4},{t:"crit",k:"nova",e:"shadow",nm:"Umbral Nova Fury",ch:38,cd:1.5,p:1.53,r:92,at:6}],v:{c:"#bf8beb",d:"#45186b",a:"wisp",n:2,s:1.1}},soulreaver17:{fx:[{t:"hit",k:"mana",e:"bone",nm:"Grave Wellspring Strike",ch:8,cd:2.0,p:0.025,at:3},{t:"kill",k:"haste",e:"bone",nm:"Grave Haste Harvest",ch:42,cd:0.8,p:0.23,d:5,at:5}],v:{c:"#e5d0bd",d:"#66482c",a:"shard",n:2,s:1.2}},dragonsworn17:{fx:[{t:"skill",k:"haste",e:"wyrm",nm:"Wyrmfire Haste",ch:43,cd:1.0,p:0.24,d:3,at:4},{t:"hurt",k:"mana",e:"wyrm",nm:"Wyrmfire Wellspring",ch:19,cd:4.0,p:0.095,at:6}],v:{c:"#ff631e",d:"#5f2105",a:"ember2",n:2,s:1.28}},eclipse18:{fx:[{t:"hurt",k:"ward",e:"shadow",nm:"Umbral Ward Reprisal",ch:14,cd:4.0,d:1.6,at:4},{t:"kill",k:"heal",e:"shadow",nm:"Umbral Renewal Harvest",ch:34,cd:0.8,p:0.096,at:6}],v:{c:"#bd92ec",d:"#41186d",a:"wisp",n:2,s:1.22}},titan18:{fx:[{t:"tick",k:"drain",e:"rune",nm:"Runic Siphon",ch:100,cd:14.0,iv:14.0,p:1.45,r:112,at:6},{t:"hurt",k:"freeze",e:"rune",nm:"Runic Stasis Reprisal",ch:23,cd:4.0,r:121,d:1.7,at:7}],v:{c:"#55aaff",d:"#063c71",a:"rune",n:2,s:1.06}},crusader19:{fx:[{t:"hurt",k:"revive",e:"fire",nm:"Scorching Second Life",ch:100,cd:121.0,p:0.49,at:3},{t:"hit",k:"mana",e:"fire",nm:"Scorching Wellspring Strike",ch:11,cd:2.0,p:0.038,at:5}],v:{c:"#ffb253",d:"#704106",a:"ember",n:2,s:0.83}},galedancer20:{fx:[{t:"kill",k:"xp",e:"gale",nm:"Gale Insight",ch:50,cd:0.8,p:0.25,at:3},{t:"kill",k:"cdreset",e:"gale",nm:"Gale Echo Harvest",ch:44,cd:0.8,p:2.4,at:5}],v:{c:"#bcf1d7",d:"#1f784d",a:"swirl",n:2,s:0.83}},sanguine20:{fx:[{t:"hurt",k:"revive",e:"gold",nm:"Gilded Second Life",ch:100,cd:125.0,p:0.47,at:3},{t:"hurt",k:"pull",e:"void",nm:"Void Vortex",ch:13,cd:4.0,p:0.82,r:142,at:5}],v:{c:"#c076ff",d:"#46077c",a:"wisp2",n:2,s:0.85}},abyssal21:{fx:[{t:"kill",k:"cdreset",e:"void",nm:"Void Echo",ch:51,cd:0.8,p:2.2,at:3},{t:"hit",k:"execute",e:"void",nm:"Void Reaping",ch:34,cd:2.0,p:0.22,at:5}],v:{c:"#9949ff",d:"#33066d",a:"wisp2",n:2,s:0.72}},runeforged22:{fx:[{t:"kill",k:"burn",e:"rune",nm:"Runic Blight Harvest",ch:40,cd:0.8,p:0.44,d:3,at:4},{t:"crit",k:"haste",e:"rune",nm:"Runic Haste",ch:45,cd:1.5,p:0.23,d:4,at:6}],v:{c:"#7fcdff",d:"#07507f",a:"rune",n:2,s:0.84}},knell22:{fx:[{t:"skill",k:"pull",e:"bone",nm:"Grave Vortex Surge",ch:42,cd:1.0,p:0.84,r:162,at:3},{t:"crit",k:"freeze",e:"bone",nm:"Grave Stasis Fury",ch:41,cd:1.5,r:80,d:1.1,at:5}],v:{c:"#eadbc8",d:"#6a512e",a:"shard",n:2,s:0.86}},dawnbringer23:{fx:[{t:"crit",k:"haste",e:"holy",nm:"Radiant Haste",ch:34,cd:1.5,p:0.24,d:4,at:4},{t:"hit",k:"frenzy",e:"holy",nm:"Radiant Frenzy Strike",ch:10,cd:2.0,p:0.16,d:6,at:6}],v:{c:"#ffd08a",d:"#835107",a:"star",n:2,s:0.88}},voidwalker24:{fx:[{t:"tick",k:"rain",e:"void",nm:"Void Barrage",ch:100,cd:16.0,iv:16.0,p:1.47,n:3,at:4},{t:"skill",k:"haste",e:"void",nm:"Void Haste Surge",ch:25,cd:1.0,p:0.33,d:3,at:6}],v:{c:"#b646ff",d:"#43066c",a:"wisp2",n:2,s:0.76}},starforged25:{fx:[{t:"crit",k:"cdreset",e:"rune",nm:"Runic Echo",ch:48,cd:1.5,p:1.4,at:4},{t:"skill",k:"drain",e:"rune",nm:"Runic Siphon Surge",ch:38,cd:1.0,p:1.02,r:134,at:6}],v:{c:"#79a0ff",d:"#07297d",a:"rune",n:2,s:0.73}},worldbreaker26:{fx:[{t:"skill",k:"drain",e:"wyrm",nm:"Wyrmfire Siphon",ch:42,cd:1.0,p:1.38,r:144,at:4},{t:"kill",k:"cdreset",e:"wyrm",nm:"Wyrmfire Echo Harvest",ch:48,cd:0.8,p:2.3,at:6}],v:{c:"#ff7f35",d:"#662905",a:"ember2",n:2,s:1.16}},primordial28:{fx:[{t:"hit",k:"execute",e:"wyrm",nm:"Wyrmfire Reaping",ch:31,cd:2.0,p:0.18,at:6},{t:"kill",k:"xp",e:"wyrm",nm:"Wyrmfire Insight",ch:38,cd:0.8,p:0.34,at:7}],v:{c:"#ff8d3a",d:"#682f05",a:"ember2",n:2,s:1.26}},everlasting30:{fx:[{t:"crit",k:"freeze",e:"gold",nm:"Gilded Stasis Fury",ch:43,cd:1.5,r:102,d:1.0,at:6},{t:"kill",k:"gold",e:"storm",nm:"Storm Tithe",ch:34,cd:0.8,n:76,at:9}],v:{c:"#ffdc47",d:"#6c5906",a:"spark",n:2,s:0.91}}}};
+/* ---------- unique effects, appearance and hidden gear score ---------- */
+const ELB = { frost: '#8fd8ff', fire: '#ff8a3a', storm: '#ffe14a', blood: '#e0405a', shadow: '#a07ae8', holy: '#fff0a8', venom: '#9be04a', bone: '#e8dcc4', gale: '#b6f0e0', rune: '#6ab7ff', gold: '#ffd166', void: '#c060ff', wyrm: '#ff5a2a', moon: '#c8d4ff' };
+const ELSP = { frost: 6, fire: 8, storm: 5, blood: 7, shadow: 9, holy: 12, venom: 7, bone: 6, gale: 10, rune: 4, gold: 8, void: 9, wyrm: 8, moon: 6 };
+const FXOFF = { nova: 1, chain: 1, burn: 1, freeze: 1, slow: 1, pull: 1, drain: 1, rain: 1, execute: 1 };
+(function () { for (const n in FXDATA.L) { const o = FXDATA.L[n]; o.fx.id = 'L:' + n; o.v.h = hashStr(n); } for (const id in FXDATA.S) { const o = FXDATA.S[id]; o.fx.forEach(f => { f.id = 'S:' + id + ':' + f.at; }); o.v.h = hashStr(id); } })();
+function hashStr(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h / 9973; }
+function visOf(it) { if (!it) return null; if (it.unique && FXDATA.L[it.name]) return FXDATA.L[it.name].v; if (it.set && FXDATA.S[it.set]) return FXDATA.S[it.set].v; return null; }
+function rcOf(it) { return visOf(it) || RAR[it.r]; }
+function itemFx(it) { return it && it.unique && FXDATA.L[it.name] ? FXDATA.L[it.name].fx : null; }
+function fxText(f) {
+  const pr = { hit: 'On hit', crit: 'On crit', kill: 'On kill', hurt: 'When struck', skill: 'On skill cast', tick: 'Every ' + f.iv + 's' }[f.t];
+  const chs = (f.t === 'tick' || f.ch >= 100) ? '' : ' (' + f.ch + '%)', pc = x => Math.round(x * 100);
+  const E = f.e ? f.e : 'rune'; let d = '';
+  switch (f.k) {
+    case 'nova': d = 'detonate a ' + f.nm.split(' ')[0].toLowerCase() + ' nova (' + f.r + 'px) for ' + pc(f.p) + '% ATK'; break;
+    case 'chain': d = 'arc to ' + f.n + ' nearby foes for ' + pc(f.p) + '% ATK each'; break;
+    case 'heal': d = 'restore ' + pc(f.p) + '% max HP'; break;
+    case 'mana': d = 'restore ' + pc(f.p) + '% max MP'; break;
+    case 'ward': d = 'become invulnerable for ' + f.d + 's'; break;
+    case 'frenzy': d = 'gain +' + pc(f.p) + '% ATK for ' + f.d + 's'; break;
+    case 'haste': d = 'gain +' + pc(f.p) + '% SPD for ' + f.d + 's'; break;
+    case 'freeze': d = 'stun foes within ' + f.r + 'px for ' + f.d + 's'; break;
+    case 'slow': d = 'slow foes within ' + f.r + 'px for ' + f.d + 's'; break;
+    case 'burn': d = 'ignite the target for ' + pc(f.p) + '% ATK per second over ' + f.d + 's'; break;
+    case 'gold': d = 'gain +' + f.n + ' gold'; break;
+    case 'xp': d = 'gain ' + pc(f.p) + '% bonus XP'; break;
+    case 'thorns': d = 'lash back at foes within ' + f.r + 'px for ' + pc(f.p) + '% of the damage taken'; break;
+    case 'execute': d = 'slay a non-boss foe below ' + pc(f.p) + '% HP'; break;
+    case 'cdreset': d = 'reduce all skill cooldowns by ' + f.p + 's'; break;
+    case 'pull': d = 'drag foes within ' + f.r + 'px toward you for ' + pc(f.p) + '% ATK'; break;
+    case 'barrier': d = 'gain a barrier of ' + pc(f.p) + '% max HP'; break;
+    case 'revive': d = 'survive a lethal blow with ' + pc(f.p) + '% HP (cooldown ' + f.cd + 's)'; break;
+    case 'drain': d = 'siphon foes within ' + f.r + 'px for ' + pc(f.p) + '% ATK, healing half'; break;
+    case 'rain': d = 'call ' + f.n + ' strikes on random foes for ' + pc(f.p) + '% ATK each'; break;
+  }
+  return f.nm + ': ' + pr + chs + ', ' + d + '.';
+}
+function fxShape(c, st, x, y, s, col, a) {
+  c.save(); c.translate(x, y); c.globalAlpha = a; c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.1; c.lineCap = 'round';
+  if (st === 'flake') { for (let i = 0; i < 3; i++) { c.rotate(1.047); c.beginPath(); c.moveTo(-s, 0); c.lineTo(s, 0); c.stroke(); } }
+  else if (st === 'ember' || st === 'ember2') { c.beginPath(); c.arc(0, 0, s * 0.5, 0, 7); c.fill(); if (st === 'ember2') { c.globalAlpha = a * 0.35; c.beginPath(); c.arc(0, 0, s, 0, 7); c.fill(); } }
+  else if (st === 'spark') { c.beginPath(); c.moveTo(-s, -s * 0.6); c.lineTo(-s * 0.2, 0); c.lineTo(s * 0.3, -s * 0.2); c.lineTo(s, s * 0.7); c.stroke(); }
+  else if (st === 'drop' || st === 'drop2') { c.beginPath(); c.moveTo(0, -s); c.quadraticCurveTo(s * 0.8, s * 0.2, 0, s * 0.7); c.quadraticCurveTo(-s * 0.8, s * 0.2, 0, -s); if (st === 'drop') c.fill(); else c.stroke(); }
+  else if (st === 'wisp' || st === 'crescent') { c.beginPath(); c.arc(0, 0, s * 0.7, 0.6, 4.6); c.stroke(); if (st === 'crescent') { c.beginPath(); c.arc(s * 0.25, 0, s * 0.55, 0.9, 4.4); c.stroke(); } }
+  else if (st === 'wisp2') { c.beginPath(); c.arc(0, 0, s * 0.8, 0.4, 4.2); c.stroke(); c.beginPath(); c.arc(0, 0, s * 0.4, 2, 6); c.stroke(); }
+  else if (st === 'star') { c.beginPath(); c.moveTo(0, -s); c.lineTo(s * 0.22, -s * 0.22); c.lineTo(s, 0); c.lineTo(s * 0.22, s * 0.22); c.lineTo(0, s); c.lineTo(-s * 0.22, s * 0.22); c.lineTo(-s, 0); c.lineTo(-s * 0.22, -s * 0.22); c.closePath(); c.fill(); }
+  else if (st === 'shard') { c.beginPath(); c.moveTo(0, -s); c.lineTo(s * 0.5, 0); c.lineTo(0, s * 0.8); c.lineTo(-s * 0.5, 0); c.closePath(); c.fill(); }
+  else if (st === 'swirl') { c.beginPath(); for (let i = 0; i < 14; i++) { const r = s * i / 13, a2 = i * 0.7; c.lineTo(Math.cos(a2) * r, Math.sin(a2) * r); } c.stroke(); }
+  else if (st === 'rune') { c.strokeRect(-s * 0.5, -s * 0.7, s, s * 1.4); c.beginPath(); c.moveTo(-s * 0.5, -s * 0.2); c.lineTo(s * 0.5, s * 0.3); c.moveTo(0, -s * 0.7); c.lineTo(0, s * 0.7); c.stroke(); }
+  else if (st === 'coin') { c.beginPath(); c.arc(0, 0, s * 0.7, 0, 7); c.stroke(); c.beginPath(); c.arc(0, 0, s * 0.25, 0, 7); c.fill(); }
+  c.restore();
+}
+function itemScore(it) {
+  const parts = [], s = Math.round(score(it)); parts.push(['stats', s]);
+  const rp = [0, 12, 35, 80, 180, 110][it.r] || 0; if (rp) parts.push(['rarity', rp]);
+  parts.push(['item level', Math.round((it.ilvl || 1) * 3)]);
+  if (it.unique) { parts.push(['legendary', 120]); if (itemFx(it)) parts.push(['effect', 140]); } else if (it.set) parts.push(['set piece', 70]);
+  return { total: parts.reduce((a, b) => a + b[1], 0), parts };
+}
+function fmtTime(s) { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), q = s % 60; return h + ':' + String(m).padStart(2, '0') + ':' + String(q).padStart(2, '0'); }
 function fmtStat(k, v) { const l = STATLBL[k]; return '+' + (k === 'regen' ? (Math.round(v * 10) / 10) : v) + l[1] + ' ' + l[0]; }
 function rollRarity(bonus, min) {
   const w = [62, 26, 9, 2.4, 0.5], f = [0.8, 1, 1.25, 1.5, 1.8];
@@ -1282,7 +1583,7 @@ function makeSetItem(set, slotKey, ilvl) {
   return { id: ITEM_ID++, slot: slotKey, tier, wt: slotKey === 'weapon' ? type : null, r: 5, set: set.id, ilvl, req: Math.max(1, ilvl - 1), stats: st, name, desc: descOfStats(st, slotKey, type), value: Math.round(3 * p * 3.4 + 6) };
 }
 function makeUnique(ilvl, slotWant) {
-  const L = LEGENDS.filter(l => l.lv <= ilvl + 3 && (!slotWant || l.slot === slotWant));
+  let L = LEGENDS.filter(l => l.lv <= ilvl + 3 && l.lv >= ilvl - 12 && (!slotWant || l.slot === slotWant)); if (!L.length) L = LEGENDS.filter(l => l.lv <= ilvl + 3 && (!slotWant || l.slot === slotWant));
   if (!L.length) return null;
   const l = L[Math.floor(Math.random() * L.length)], it = makeItem(l.slot, Math.max(ilvl, l.lv), 4, l.wt), u = 0.7 + 0.04 * Math.max(ilvl, l.lv);
   for (const k in l.x) { const v = (it.stats[k] || 0) + l.x[k] * u; it.stats[k] = k === 'regen' ? Math.round(v * 10) / 10 : Math.round(v); }
@@ -1303,7 +1604,8 @@ function setInfo(id, eq) {
   const s = SETS.find(x => x.id === id); if (!s) return '';
   const cnt = setCounts(eq || {})[id] || 0, tot = Object.keys(s.p).length;
   const parts = Object.keys(s.b).map(Number).sort((a, b) => a - b).map(t => (cnt >= t ? '✔ ' : '') + '(' + t + ') ' + Object.keys(s.b[t]).map(k => fmtStat(k, s.b[t][k])).join(', '));
-  return '◆ SET ' + s.n + ' ' + cnt + '/' + tot + '  ' + parts.join('  ');
+  const SX = FXDATA.S[id], fxp = SX ? '   ' + SX.fx.map(f => (cnt >= f.at ? '✔ ' : '') + '(' + f.at + ') \u2605 ' + fxText(f)).join('   ') : '';
+  return '◆ SET ' + s.n + ' ' + cnt + '/' + tot + '  ' + parts.join('  ') + fxp;
 }
 
 function makeItemOld(slot, ilvl, r) {
@@ -1617,14 +1919,14 @@ class Component extends DCLogic {
     this.drinkPotion = () => { this.usePotion(); this.refocus(); };
     this.stars = [];
     for (let i = 0; i < 60; i++) this.stars.push({ x: (i * 97 % 160) * 10, y: (i * 53 % 230), s: i % 5 === 0 ? 2 : 1, ph: i * 1.7 });
-    this.g = { mode: 'title', stage: 1, hero: this.newHero(), log: [], msg: '', msgT: 0, dirty: true, t: 0, shake: 0, flags: {}, visited: {}, winT: 0, fade: 0, doorCd: 0, onAltar: false, cam: { x: 0, y: 0 } };
+    this.g = { mode: 'title', stage: 1, hero: this.newHero(), log: [], msg: '', msgT: 0, dirty: true, t: 0, shake: 0, flags: {}, visited: {}, playT: 0, deaths: 0, cycleStart: 0, buf: {}, winT: 0, fade: 0, doorCd: 0, onAltar: false, cam: { x: 0, y: 0 } };
     this.newCycle(true);
     this.saveMeta = this.metaOf(this.readStore());
   }
 
   /* ---------- persistent save (browser storage + copyable code) ---------- */
   readStore() { try { return localStorage.getItem('hollowCathedralSave1') || ''; } catch (err) { return ''; } }
-  serialize() { const g = this.g; return JSON.stringify({ v: 1, stage: g.stage, hero: g.hero, flags: g.flags, visited: g.visited, save: g.save, at: Date.now() }); }
+  serialize() { const g = this.g; return JSON.stringify({ v: 1, stage: g.stage, hero: g.hero, flags: g.flags, visited: g.visited, save: g.save, pt: g.playT || 0, ds: g.deaths || 0, cs: g.cycleStart || 0, at: Date.now() }); }
   metaOf(str) { try { const d = JSON.parse(str), rm = this.rooms[d.save.room]; return 'Lv ' + d.hero.level + ' \u00b7 ' + (rm ? rm.name : d.save.room) + ' \u00b7 Cycle ' + d.stage + ' \u00b7 ' + d.hero.gold + 'g'; } catch (err) { return null; } }
   writeSave(msg) {
     const str = this.serialize();
@@ -1641,7 +1943,7 @@ class Component extends DCLogic {
       if (!d || d.v !== 1 || !d.hero || !d.save || !d.hero.equip) return false;
       this.rooms = buildRooms();
       if (!this.rooms[d.save.room]) d.save = { room: 'gate', x: 6 * T, y: 12 * T - 34, key: 'gate:4:11' };
-      g.stage = d.stage || 1; g.hero = d.hero; g.flags = d.flags || {}; g.visited = d.visited || {}; g.save = d.save; g.canAuto = true; g.autoT = 20;
+      g.playT = d.pt || 0; g.deaths = d.ds || 0; g.cycleStart = d.cs || 0; g.buf = {}; this.fxcd = {}; d.hero.abs = 0; g.stage = d.stage || 1; g.hero = d.hero; g.flags = d.flags || {}; g.visited = d.visited || {}; g.save = d.save; g.canAuto = true; g.autoT = 20;
       let m = 0; for (const it of Object.values(d.hero.equip).concat(d.hero.pack || [])) if (it && it.id > m) m = it.id;
       ITEM_ID = Math.max(ITEM_ID, m + 1);
       g.hero.pack = g.hero.pack || [];
@@ -1682,6 +1984,7 @@ class Component extends DCLogic {
     this.rooms = buildRooms();
     g.flags = {};
     if (!first) { g.stage++; g.hero.hasKey = false; }
+    g.cycleStart = g.playT || 0; g.buf = {}; g.hero.abs = 0;
     g.save = { room: 'gate', x: 6 * T, y: 12 * T - 34, key: 'gate:4:11' };
     this.loadRoom('gate', { x: g.save.x, y: g.save.y, face: 1 });
     g.hero.hp = this.stats().maxHp;
@@ -1700,6 +2003,7 @@ class Component extends DCLogic {
     for (const id in sc) { const st = SETS.find(x => x.id === id); if (!st) continue; for (const t in st.b) if (sc[id] >= +t) for (const q in st.b[t]) X[q] += st.b[t][q]; }
     let atk = 6 + 2 * (L - 1) + X.atk, def = 1 + Math.floor((L - 1) * 0.8) + X.def, hp = 50 + 10 * (L - 1) + h.hpUp + X.hp, spd = 165 + (L - 1) + X.spd, crit = 5 + X.crit;
     if (h.rally > 0) atk = Math.round(atk * 1.2);
+    const BF = this.g.buf; if (BF) { if (BF.atk && BF.atk.t > 0) atk = Math.round(atk * BF.atk.m); if (BF.spd && BF.spd.t > 0) spd = Math.round(spd * BF.spd.m); }
     return { atk, def, maxHp: hp, spd, crit, life: X.life, blk: Math.min(60, X.blk), maxMp: 30 + 4 * (L - 1) + X.mp,
       sk: { sword: 1 + X.swd / 100, bow: 1 + X.bow / 100, darts: 1 + X.drt / 100, bolt: 1 + X.lit / 100 }, cdr: Math.min(45, X.cdr), mpr: Math.min(45, X.mpr),
       res: Math.min(50, X.res), regen: X.regen, gf: X.gf, mf: Math.min(80, X.mf), xpb: X.xpb, cdd: X.cdd, sets: sc };
@@ -1976,12 +2280,14 @@ class Component extends DCLogic {
     if (S.life > 0 && !noLs) { const hh = this.g.hero; hh.hp = Math.min(S.maxHp, hh.hp + d * S.life / 100); this.g.dirty = true; }
     this.text(e.x + e.w / 2, e.y - 4, crit ? d + '!' : '' + d, crit ? '#ffd166' : '#ffffff');
     this.burst(e.x + e.w / 2, e.y + e.h / 2, crit ? 8 : 4, crit ? '#ffd166' : '#ffffff');
-    if (e.hp <= 0) this.kill(e);
+    if (!this._fxd && !stomp) { this.fire('hit', { e, d, crit }); if (crit) this.fire('crit', { e, d }); }
+    if (e.hp <= 0 && !e.dead) this.kill(e);
   }
 
   kill(e) {
     const g = this.g, h = g.hero, boss = e.t === 'saint' || e.t === 'warden' || e.t === 'nura' || e.t === 'dragon', R = this.cur.R;
     e.dead = true;
+    if (!this._fxd) this.fire('kill', { e });
     if (e.elite) {
       this.toast(e.elite.n + ' ' + PETD[e.t].n + ' slain!', e.elite.c);
       if (e.elite.k === 'boom') {
@@ -2001,7 +2307,7 @@ class Component extends DCLogic {
     const slot = () => SLOTS[Math.floor(Math.random() * SLOTS.length)];
     const lv = h.level + (R.tier >= 2 && Math.random() < 0.3 ? 1 : 0);
     if (e.t === 'dragon') {
-      g.flags.dragon = true; h.potions += 4; g.winT = 3.4;
+      g.flags.dragon = true; h.potions += 4; g.winT = 3.4; g.totalTime = g.playT || 0; g.cycleTime = (g.playT || 0) - (g.cycleStart || 0);
       this.toast('The Red Dragon falls. The frozen valley exhales at last.', '#ff8a3a');
     } else if (e.t === 'nura') {
       g.flags.nura = true; h.potions += 3;
@@ -2017,6 +2323,120 @@ class Component extends DCLogic {
     }
     this.dropLoot(e);
     this.touch();
+  }
+
+  /* ---------- unique item / set effects ---------- */
+  fxs() {
+    const g = this.g, eq = g.hero.equip; let sig = '';
+    for (const k of SLOTS) { const it = eq[k]; sig += (it ? it.id : 0) + ','; }
+    if (this._fxSig === sig && this._fxL) return this._fxL;
+    const out = [], sc = setCounts(eq);
+    for (const k of SLOTS) { const f = itemFx(eq[k]); if (f) out.push(f); }
+    for (const id in sc) { const S = FXDATA.S[id]; if (S) for (const f of S.fx) if (sc[id] >= f.at) out.push(f); }
+    this._fxSig = sig; this._fxL = out; if (!this.fxcd) this.fxcd = {};
+    return out;
+  }
+  foes(o, r) { const out = []; for (const e of this.cur.enemies) if (!e.dead && Math.hypot(e.x + e.w / 2 - o.x, e.y + e.h / 2 - o.y) < r + e.w / 2) out.push(e); return out; }
+  fire(trg, ctx) {
+    const list = this.fxs(); if (!list.length) return;
+    for (const f of list) {
+      if (f.t !== trg || (this.fxcd[f.id] || 0) > 0) continue;
+      if (f.ch < 100 && Math.random() * 100 >= f.ch) continue;
+      this.fxcd[f.id] = f.cd || 0; this.runFx(f, ctx || {});
+    }
+  }
+  fxTick(dt) {
+    const g = this.g, list = this.fxs(), B = g.buf;
+    if (B) { for (const k in B) if (B[k].t > 0) B[k].t -= dt; }
+    for (const id in this.fxcd) if (this.fxcd[id] > 0) this.fxcd[id] -= dt;
+    if (g.mode !== 'play' || !list.length) return;
+    const p = g.p, h = g.hero, S = this.stats(), pc = { x: p.x + 11, y: p.y + 17 };
+    for (const f of list) {
+      if (f.t !== 'tick' || (this.fxcd[f.id] || 0) > 0) continue;
+      let ok = true;
+      if (FXOFF[f.k]) ok = this.foes(pc, (f.r || 260) + 60).length > 0 || f.k === 'rain' && this.foes(pc, 360).length > 0;
+      else if (f.k === 'heal') ok = h.hp < S.maxHp; else if (f.k === 'mana') ok = h.mp < S.maxMp; else if (f.k === 'barrier') ok = !(h.abs > 0); else if (f.k === 'ward') ok = this.foes(pc, 220).length > 0;
+      if (!ok) { this.fxcd[f.id] = 0.6; continue; }
+      this.fxcd[f.id] = f.iv; this.runFx(f, {});
+    }
+  }
+  fxFlare(x, y, f, r) {
+    const col = ELB[f.e] || '#fff', n = ELSP[f.e] || 6; this.ring(x, y, col);
+    for (let i = 0; i < n; i++) { const a = i / n * 6.283 + f.id.length; this.cur.fx.push({ x, y, vx: Math.cos(a) * (150 + (r || 60) * 1.4), vy: Math.sin(a) * (150 + (r || 60) * 1.4) - 30, t: 0.45, m: 0.45, col, s: 3 }); }
+    this.burst(x, y, 6, col);
+  }
+  fxLine(a, b, col) { for (let i = 0; i <= 8; i++) { const q = i / 8; this.cur.fx.push({ x: a.x + (b.x - a.x) * q + (Math.random() - 0.5) * 8, y: a.y + (b.y - a.y) * q + (Math.random() - 0.5) * 8, vx: 0, vy: 0, t: 0.28, m: 0.28, col, s: 3 }); } }
+  dot(e, q) { e.hp -= q; e.flash = 0.06; this.burst(e.x + e.w / 2, e.y + e.h / 2, 1, '#ff8a3a'); if (e.hp <= 0 && !e.dead) { const o = this._fxd; this._fxd = true; this.kill(e); this._fxd = o; } }
+  runFx(f, ctx) {
+    const g = this.g, p = g.p, h = g.hero, S = this.stats(), cur = this.cur, col = ELB[f.e] || '#fff';
+    const pc = { x: p.x + 11, y: p.y + 17 }, tc = ctx.e ? { x: ctx.e.x + ctx.e.w / 2, y: ctx.e.y + ctx.e.h / 2 } : pc;
+    const dmg = Math.max(1, Math.round(S.atk * (f.p || 1))), boss = e => e.t === 'saint' || e.t === 'warden' || e.t === 'nura' || e.t === 'dragon';
+    const prev = this._fxd; this._fxd = true;
+    try {
+      const o = (f.t === 'hit' || f.t === 'crit' || f.t === 'kill') ? tc : pc;
+      const strike = (e, d) => this.hitEnemy(e, d, e.x + e.w / 2 > pc.x ? 1 : -1, false, true);
+      switch (f.k) {
+        case 'nova': this.fxFlare(o.x, o.y, f, f.r); for (const e of this.foes(o, f.r)) strike(e, dmg); break;
+        case 'chain': { const t = this.foes(tc, 190).filter(e => e !== ctx.e).sort((a, b) => Math.hypot(a.x - tc.x, a.y - tc.y) - Math.hypot(b.x - tc.x, b.y - tc.y)).slice(0, f.n); let from = tc; for (const e of t) { const to = { x: e.x + e.w / 2, y: e.y + e.h / 2 }; this.fxLine(from, to, col); strike(e, dmg); from = to; } if (!t.length && ctx.e) this.fxFlare(tc.x, tc.y, f, 30); break; }
+        case 'heal': h.hp = Math.min(S.maxHp, h.hp + S.maxHp * f.p); this.ring(pc.x, pc.y, col); this.text(pc.x, p.y - 14, '+' + Math.round(S.maxHp * f.p), '#9ad0b5'); g.dirty = true; break;
+        case 'mana': h.mp = Math.min(S.maxMp, h.mp + S.maxMp * f.p); this.ring(pc.x, pc.y, col); break;
+        case 'ward': p.inv = Math.max(p.inv, f.d); this.fxFlare(pc.x, pc.y, f, 30); break;
+        case 'frenzy': (g.buf || (g.buf = {})).atk = { m: 1 + f.p, t: f.d }; this.fxFlare(pc.x, pc.y, f, 30); break;
+        case 'haste': (g.buf || (g.buf = {})).spd = { m: 1 + f.p, t: f.d }; this.fxFlare(pc.x, pc.y + 14, f, 24); break;
+        case 'freeze': this.fxFlare(pc.x, pc.y, f, f.r); for (const e of this.foes(pc, f.r)) { if (boss(e)) e.slow = Math.max(e.slow || 0, f.d); else e.stun = Math.max(e.stun || 0, f.d); } break;
+        case 'slow': this.fxFlare(tc.x, tc.y, f, f.r * 0.6); for (const e of this.foes(tc, f.r)) e.slow = Math.max(e.slow || 0, f.d); break;
+        case 'burn': { const e = ctx.e || this.foes(pc, 200)[0]; if (e) { e.burn = { dps: Math.max(1, S.atk * f.p), t: f.d }; this.fxFlare(e.x + e.w / 2, e.y + e.h / 2, f, 20); } break; }
+        case 'gold': h.gold += f.n; this.text(pc.x, p.y - 22, '+' + f.n + 'g', '#ffd166'); this.burst(pc.x, pc.y, 4, col); break;
+        case 'xp': if (ctx.e) { const x = Math.max(1, Math.round((ctx.e.xp || 4) * f.p)); this.gainXp(x); this.text(pc.x, p.y - 22, '+' + x + ' xp', '#9ad0b5'); this.ring(pc.x, pc.y, col); } break;
+        case 'thorns': { const d2 = Math.max(1, Math.round((ctx.dmg || 5) * f.p)); this.fxFlare(pc.x, pc.y, f, f.r); for (const e of this.foes(pc, f.r)) strike(e, d2); break; }
+        case 'execute': { const e = ctx.e; if (e && !e.dead && !boss(e) && e.hp / e.mhp < f.p) { this.fxFlare(e.x + e.w / 2, e.y + e.h / 2, f, 30); strike(e, e.hp + 1); } break; }
+        case 'cdreset': for (const k in p.skCd) if (p.skCd[k] > 0) p.skCd[k] = Math.max(0, p.skCd[k] - f.p); this.ring(pc.x, pc.y, col); break;
+        case 'pull': this.fxFlare(pc.x, pc.y, f, f.r); for (const e of this.foes(pc, f.r)) { if (!boss(e)) e.kb = (pc.x > e.x + e.w / 2 ? 1 : -1) * 380; strike(e, dmg); } break;
+        case 'barrier': h.abs = Math.min(S.maxHp * 0.4, (h.abs || 0) + S.maxHp * f.p); this.fxFlare(pc.x, pc.y, f, 30); break;
+        case 'drain': { let tot = 0; const t = this.foes(pc, f.r); for (const e of t) { this.fxLine({ x: e.x + e.w / 2, y: e.y + e.h / 2 }, pc, col); const b = e.hp; strike(e, dmg); tot += Math.min(b, dmg); } if (tot) { h.hp = Math.min(S.maxHp, h.hp + tot * 0.5); g.dirty = true; } break; }
+        case 'rain': { const t = this.foes(pc, 380); for (let i = 0; i < f.n && t.length; i++) { const e = t[Math.floor(Math.random() * t.length)]; if (e.dead) continue; const x = e.x + e.w / 2; this.fxLine({ x, y: e.y - 150 }, { x, y: e.y + e.h / 2 }, col); this.burst(x, e.y + e.h / 2, 5, col); strike(e, dmg); } break; }
+      }
+      if (f.k !== 'gold' && f.k !== 'xp') this.text(pc.x, p.y - 34, f.nm, col);
+    } finally { this._fxd = prev; }
+  }
+  drawAuras(c, p) {
+    const g = this.g, h = g.hero, eq = h.equip, t = g.t, fc = p.face || 1;
+    const A = { helm: [0, -42, 'orbit'], armor: [0, -22, 'rise'], gloves: [fc * 13, -16, 'hand'], boots: [0, -1, 'ground'], belt: [0, -12, 'ring'], shield: [-fc * 14, -18, 'swirl'], ring: [fc * 13, -14, 'twinkle'], amulet: [0, -27, 'twinkle'], weapon: [fc * 20, -24, 'blade'] };
+    c.save(); c.translate(p.x + 11, p.y + 34);
+    for (const k of SLOTS) {
+      const it = eq[k]; if (!it) continue; const V = visOf(it); if (!V) continue; const an = A[k], n = it.unique ? V.n : 1, al = it.unique ? 0.9 : 0.6;
+      for (let i = 0; i < n; i++) {
+        const tt = t * V.s + i / n + V.h * 7; let x = an[0], y = an[1], a = al, m = an[2], s = 3.2;
+        if (m === 'orbit') { x += Math.cos(tt * 4) * 13; y += Math.sin(tt * 4) * 4; }
+        else if (m === 'rise') { const q = (tt * 0.9) % 1; x += Math.sin(tt * 5 + i * 2) * 9; y += 10 - q * 30; a *= Math.sin(q * 3.14); }
+        else if (m === 'hand') { x += Math.cos(tt * 7) * 6; y += Math.sin(tt * 7) * 6; }
+        else if (m === 'ground') { const q = (tt * 1.1) % 1; x += (i - n / 2) * 9 + Math.sin(tt * 3) * 3; y -= q * 8; a *= 1 - q; }
+        else if (m === 'ring') { x += Math.cos(tt * 3) * 11; y += Math.sin(tt * 3) * 3; }
+        else if (m === 'swirl') { x += Math.cos(tt * 5) * 5; y += Math.sin(tt * 5) * 14; }
+        else if (m === 'twinkle') { x += Math.cos(tt * 2 + i * 3) * 6; y += Math.sin(tt * 2 + i * 3) * 6; a *= 0.45 + 0.55 * Math.sin(tt * 9); }
+        else if (m === 'blade') { const q = (tt * 1.4) % 1; x += fc * q * 40; y -= q * 26 - Math.sin(tt * 8) * 3; a *= 1 - q * 0.7; }
+        if (a > 0.05) fxShape(c, V.a, x, y, s + (it.unique ? 0.8 : 0), V.c, a);
+      }
+    }
+    const sc = setCounts(eq);
+    for (const id in sc) {
+      const S = FXDATA.S[id]; if (!S) continue; const mx = S.fx[S.fx.length - 1].at, mn = S.fx[0].at;
+      if (sc[id] >= mn) { c.save(); c.globalAlpha = 0.45 + 0.15 * Math.sin(t * 2); c.strokeStyle = S.v.c; c.lineWidth = 1.2; c.beginPath(); c.ellipse(0, 1, 20, 5, 0, 0, 7); c.stroke(); c.beginPath(); c.ellipse(0, 1, 13 + 2 * Math.sin(t * 3), 3.4, 0, 0, 7); c.stroke(); c.restore(); }
+      if (sc[id] >= mx) for (let i = 0; i < 6; i++) { const a2 = t * 1.8 + i * 1.047; fxShape(c, S.v.a, Math.cos(a2) * 24, -22 + Math.sin(a2) * 8, 3.4, S.v.c, 0.8); }
+    }
+    c.restore();
+  }
+  scoreReport() {
+    const g = this.g, h = g.hero, lines = [], lab = { weapon: 'Weapon', shield: 'Shield', helm: 'Helm', armor: 'Armor', gloves: 'Gloves', boots: 'Boots', ring: 'Ring', amulet: 'Amulet', belt: 'Belt' };
+    let tot = 0;
+    for (const k of SLOTS) { const it = h.equip[k]; if (!it) continue; const s = itemScore(it); tot += s.total; lines.push({ l: lab[k] + ' · ' + it.name, v: s.total, sub: s.parts.map(q => q[0] + ' ' + q[1]).join(' · '), col: rcOf(it).c }); }
+    const sc = setCounts(h.equip);
+    for (const id in sc) { const st = SETS.find(x => x.id === id); if (!st) continue; const tiers = Object.keys(st.b).map(Number).filter(t => sc[id] >= t).length, full = sc[id] >= Object.keys(st.p).length; const v = tiers * 60 + (full ? 200 : 0); if (v) { tot += v; lines.push({ l: 'Set · ' + st.n + ' (' + sc[id] + '/' + Object.keys(st.p).length + ')', v, sub: tiers + ' bonus tiers × 60' + (full ? ' · complete set +200' : ''), col: FXDATA.S[id] ? FXDATA.S[id].v.c : '#9ad0b5' }); } }
+    const lv = h.level * 25; tot += lv; lines.push({ l: 'Hero level ' + h.level, v: lv, sub: '25 per level', col: '#e4d8c4' });
+    const ct = g.cycleTime || 0, tb = Math.max(0, Math.round((10800 - ct) / 12)); tot += tb; lines.push({ l: 'Speed bonus', v: tb, sub: 'cycle time ' + fmtTime(ct) + '', col: '#ffd166' });
+    const dp = Math.min(tot, (g.deaths || 0) * 40); if (dp) { tot -= dp; lines.push({ l: 'Deaths ' + g.deaths, v: -dp, sub: '−40 each', col: '#e8808a' }); }
+    const grade = tot >= 5200 ? 'S' : tot >= 3800 ? 'A' : tot >= 2600 ? 'B' : tot >= 1500 ? 'C' : 'D';
+    return { lines, total: tot, grade };
   }
 
   wtype() { const w = this.g.hero.equip.weapon; return WT[(w && w.wt) || 'sword']; }
@@ -2063,12 +2483,17 @@ class Component extends DCLogic {
     const g = this.g, p = g.p, h = g.hero, S0 = this.stats();
     if (S0.blk && Math.random() * 100 < S0.blk) { dmg = Math.max(1, Math.round(dmg * 0.4)); this.text(p.x + 11, p.y - 22, 'BLOCK', '#d8cbb8'); this.burst(p.x + 16 * p.face, p.y + 16, 5, '#ffe9a0'); }
     if (S0.res) dmg = Math.max(1, Math.round(dmg * (1 - S0.res / 100)));
+    if (h.abs > 0) { const ab = Math.min(h.abs, dmg); h.abs -= ab; dmg -= ab; this.text(p.x + 11, p.y - 22, 'ABSORB', '#9ad8f0'); if (dmg <= 0) { p.inv = 0.5; this.touch(); return; } }
     const src = this.dmgSrc;
     if (src && src.elite) { if (src.elite.k === 'vamp') src.hp = Math.min(src.mhp, src.hp + dmg * 3); if (src.elite.k === 'venom') this.poison(Math.max(3, dmg * 0.25), 5); }
     h.hp -= dmg; p.inv = 1; p.vx = (p.x < fromX ? -1 : 1) * 230; p.vy = -260; p.onGround = false; g.shake = 0.2;
     this.text(p.x + 11, p.y - 6, '-' + dmg, '#c4303c');
     this.burst(p.x + 11, p.y + 14, 6, '#c4303c');
-    if (h.hp <= 0) this.die();
+    if (h.hp <= 0) {
+      const rv = this.fxs().find(f => f.k === 'revive' && (this.fxcd[f.id] || 0) <= 0);
+      if (rv) { this.fxcd[rv.id] = rv.cd; h.hp = Math.ceil(S0.maxHp * rv.p); p.inv = 2; this.fxFlare(p.x + 11, p.y + 17, rv, 70); this.toast(rv.nm + ': you cheat death!', ELB[rv.e]); }
+      else this.die();
+    } else this.fire('hurt', { dmg });
     this.touch();
   }
 
@@ -2079,7 +2504,7 @@ class Component extends DCLogic {
 
   die() {
     const g = this.g;
-    g.hero.hp = 0; g.mode = 'dead'; this.keys = {};
+    g.hero.hp = 0; g.mode = 'dead'; this.keys = {}; g.deaths = (g.deaths || 0) + 1; g.buf = {};
     this.toast('You were defeated in the ' + this.cur.R.name + '.', '#e8808a');
     this.touch(true);
   }
@@ -2712,7 +3137,7 @@ class Component extends DCLogic {
     const cost = this.skillCost(S, k, i);
     if (h.mp < cost) { this.toast('Not enough mana.', '#e8808a'); p.skCd[key] = 0.25; this.touch(); return; }
     if (k === 'bolt' && i !== 1 && !this.boltTargets(p, i === 0 ? 360 : 300, 220).length) { this.toast('No target in range.', '#a89a8c'); p.skCd[key] = 0.25; this.touch(); return; }
-    this.skillGain(k, i); h.mp -= cost; p.skCd[key] = this.skillCd(S, k, i);
+    this.skillGain(k, i); h.mp -= cost; p.skCd[key] = this.skillCd(S, k, i); this.fire('skill', {});
     p.skAnim = 0.55; p.skKind = key; p.pend = { k, i, t: SKDELAY[key] }; p.castT = 0.3; this.touch();
   }
 
@@ -2789,6 +3214,7 @@ class Component extends DCLogic {
   update(dt) {
     const g = this.g, p = g.p, cur = this.cur, R = cur.R, h = g.hero, K = this.keys, S = this.stats();
     g.t += dt; g.fade = Math.max(0, g.fade - dt * 3); g.doorCd = Math.max(0, g.doorCd - dt);
+    if (g.mode === 'play') { g.playT = (g.playT || 0) + dt; this.fxTick(dt); }
     if (g.canAuto) { g.autoT = (g.autoT || 20) - dt; if (g.autoT <= 0) { g.autoT = 20; this.writeSave(); } }
     const dir = ((K.KeyD || K.ArrowRight) ? 1 : 0) - ((K.KeyA || K.ArrowLeft) ? 1 : 0);
     const down = K.KeyS || K.ArrowDown, jh = K.KeyW || K.ArrowUp || K.Space;
@@ -2890,6 +3316,7 @@ class Component extends DCLogic {
       if (e.dead) continue;
       e.flash -= dt;
       const dx = (p.x + 11) - (e.x + e.w / 2), dy = (p.y + 17) - (e.y + e.h / 2);
+      if (e.burn && e.burn.t > 0) { e.burn.t -= dt; e.bAcc = (e.bAcc || 0) + e.burn.dps * dt; if (e.bAcc >= 1) { const q = Math.floor(e.bAcc); e.bAcc -= q; this.dot(e, q); } if (e.dead) continue; }
       if (e.stun > 0) { e.stun -= dt; this.idleEnemy(e, dt); continue; }
       if (e.charm > 0 || e.conf > 0) { this.confusedTick(e, dt); continue; }
       if (e.slow > 0) e.slow -= dt;
@@ -3031,7 +3458,7 @@ class Component extends DCLogic {
     // boss victory
     if (g.winT > 0) {
       g.winT -= dt;
-      if (g.winT <= 0) { g.mode = 'clear'; this.keys = {}; this.toast('The cathedral falls silent.', '#9ad0b5'); this.touch(true); return; }
+      if (g.winT <= 0) { g.rep = this.scoreReport(); g.mode = 'clear'; this.keys = {}; this.toast('The cathedral falls silent.', '#9ad0b5'); this.touch(true); return; }
     }
 
     // fx
@@ -3559,10 +3986,15 @@ class Component extends DCLogic {
   }
 
   drawPlayer(c, pp) {
+    const g = this.g, p = pp || g.p;
+    if (!pp && p.inv > 0 && !(p.dash > 0) && Math.floor(g.t * 14) % 2 === 0) return;
+    this.drawPlayerBase(c, pp); this.drawAuras(c, p);
+  }
+  drawPlayerBase(c, pp) {
     const g = this.g, p = pp || g.p, h = g.hero, eq = h.equip, k = h.sub || 'sword';
     if (!pp && p.inv > 0 && !(p.dash > 0) && Math.floor(g.t * 14) % 2 === 0) return;
     const spd = Math.abs(p.vx), moving = p.onGround && spd > 30, ph = g.t * (7 + spd / 45), air = !p.onGround;
-    const R = (it, a, b) => it ? RAR[it.r][a] : b;
+    const R = (it, a, b) => it ? rcOf(it)[a] : b;
     const tr = (it) => it ? (it.tier || 0) : -1;
     const aT = tr(eq.armor), hT = tr(eq.helm), sT = tr(eq.shield), bT = tr(eq.boots), gT = tr(eq.gloves);
     const SKIN = ['#e0b894', '#8a5a3a'];
@@ -5054,18 +5486,19 @@ class Component extends DCLogic {
     if (sel) { selIt = sel.src === 'eq' ? h.equip[sel.slot] : h.pack.find(x => x.id === sel.id); if (!selIt) { this.sel = null; sel = null; } }
     const pick = (o) => () => { this.sel = o; this.touch(true); this.refocus(); };
     const iconOf = (k, it) => ICONS[(k === 'weapon' && it && it.wt) ? it.wt : k];
-    const slotCell = (k) => { const it = h.equip[k]; return { label: labels[k], icon: '', img: itemImg(k, it, RAR), col: it ? RAR[it.r].c : '#5a4a44', bd: (sel && sel.src === 'eq' && sel.slot === k) ? '#ffd166' : (it ? RAR[it.r].d : '#3a2a28'), pick: pick({ src: 'eq', slot: k }) }; };
-    const dollS = Object.keys(DOLLPOS).map(k => { const c0 = slotCell(k), it = h.equip[k]; return Object.assign(c0, { x: DOLLPOS[k].x, y: DOLLPOS[k].y, gl: it ? '0 0 14px ' + RAR[it.r].c + '66, inset 0 0 8px ' + RAR[it.r].c + '33' : 'none' }); });
+    const slotCell = (k) => { const it = h.equip[k]; return { label: labels[k], icon: '', img: itemImg(k, it, RAR), col: it ? rcOf(it).c : '#5a4a44', bd: (sel && sel.src === 'eq' && sel.slot === k) ? '#ffd166' : (it ? rcOf(it).d : '#3a2a28'), pick: pick({ src: 'eq', slot: k }) }; };
+    const dollS = Object.keys(DOLLPOS).map(k => { const c0 = slotCell(k), it = h.equip[k]; return Object.assign(c0, { x: DOLLPOS[k].x, y: DOLLPOS[k].y, gl: it ? '0 0 14px ' + rcOf(it).c + '66, inset 0 0 8px ' + rcOf(it).c + '33' : 'none' }); });
     const packCells = [];
     for (let i = 0; i < PACK; i++) {
       const it = h.pack[i];
-      packCells.push(it ? { icon: '', img: itemImg(it.slot, it, RAR), col: RAR[it.r].c, bd: (sel && sel.src === 'pk' && sel.id === it.id) ? '#ffd166' : RAR[it.r].d, pick: pick({ src: 'pk', id: it.id }) } : { icon: '', img: BLANK, col: '#3a2a28', bd: '#2a1c1a', pick: () => { this.refocus(); } });
+      packCells.push(it ? { icon: '', img: itemImg(it.slot, it, RAR), col: rcOf(it).c, bd: (sel && sel.src === 'pk' && sel.id === it.id) ? '#ffd166' : rcOf(it).d, pick: pick({ src: 'pk', id: it.id }) } : { icon: '', img: BLANK, col: '#3a2a28', bd: '#2a1c1a', pick: () => { this.refocus(); } });
     }
+    const dOf = it => { let d = it.desc; const f = itemFx(it); if (f) d += '   \u2605 ' + fxText(f); if (it.set) d += '   ' + setInfo(it.set, h.equip); return d; };
     let det = { has: false, name: '', col: '#fff', rar: '', slot: '', desc: '', meta: '', canEquip: false, locked: false, req: 0, isEq: false, isPack: false, equip: () => {}, unequip: () => {}, sell: () => {} };
     if (selIt) {
       const isEq = sel.src === 'eq', cur = h.equip[selIt.slot], dsc = score(selIt) - (cur ? score(cur) : 0);
       det = {
-        has: true, name: selIt.name, col: RAR[selIt.r].c, rar: RAR[selIt.r].n + (selIt.unique ? ' · Unique' : ''), slot: labels[selIt.slot] + (selIt.wt ? ' · ' + WT[selIt.wt].n : ''), desc: dOf(selIt),
+        has: true, name: selIt.name, col: rcOf(selIt).c, rar: RAR[selIt.r].n + (selIt.unique ? ' · Unique' : ''), slot: labels[selIt.slot] + (selIt.wt ? ' · ' + WT[selIt.wt].n : ''), desc: dOf(selIt),
         meta: isEq ? 'Equipped · Lv ' + selIt.req + ' · sells ' + selIt.value + 'g' : 'Lv ' + selIt.req + ' · ' + (!cur ? '\u25B2 Fills empty slot' : dsc > 0 ? '\u25B2 Upgrade' : dsc < 0 ? '\u25BC Weaker' : '= Same power') + ' · sells ' + selIt.value + 'g',
         canEquip: !isEq && selIt.req <= h.level, locked: !isEq && selIt.req > h.level, req: selIt.req, isEq, isPack: !isEq,
         equip: () => { const sl = selIt.slot; this.equipItem(selIt.id); this.sel = { src: 'eq', slot: sl }; this.touch(true); },
@@ -5073,14 +5506,13 @@ class Component extends DCLogic {
         sell: () => { this.sellItem(selIt.id); this.sel = null; this.touch(true); }
       };
     }
-    const dOf = it => it.set ? it.desc + '   ' + setInfo(it.set, h.equip) : it.desc;
     const pct = (v) => Math.round((v - 1) * 100);
     const skillText = 'Skill power  Sword +' + pct(S.sk.sword) + '% · Bow +' + pct(S.sk.bow) + '% · Darts +' + pct(S.sk.darts) + '% · Lightning +' + pct(S.sk.bolt) + '%   Cooldown -' + S.cdr + '% · Mana cost -' + S.mpr + '%' + (S.res || S.regen || S.cdd || S.gf || S.mf || S.xpb ? '   Dmg reduction ' + Math.round(S.res) + '% · Regen ' + (Math.round(S.regen * 10) / 10) + '/s · Crit dmg +' + Math.round(S.cdd) + '% · Gold find ' + Math.round(S.gf) + '% · Magic find ' + Math.round(S.mf) + '% · XP +' + Math.round(S.xpb) + '%' : '') + Object.keys(S.sets).map(id => ' · ◆ ' + SETS.find(x => x.id === id).n + ' ' + S.sets[id] + '/' + Object.keys(SETS.find(x => x.id === id).p).length).join('');
     const slots = SLOTS.map((k) => {
       const it = h.equip[k];
       return Object.assign({
         label: labels[k], has: !!it, name: it ? it.name : 'Empty slot', rar: it ? '(' + RAR[it.r].n + ')' : '',
-        col: it ? RAR[it.r].c : '#8f8070', desc: it ? dOf(it) : 'Nothing equipped',
+        col: it ? rcOf(it).c : '#8f8070', desc: it ? it.desc + (it.unique ? '  \u2605' : '') : 'Nothing equipped',
         unequip: () => this.unequipItem(k)
       }, flags(k, it));
     });
@@ -5088,7 +5520,7 @@ class Component extends DCLogic {
       const cur = h.equip[it.slot], d = score(it) - (cur ? score(cur) : 0);
       const cmp = !cur ? '▲ Fills empty slot' : d > 0 ? '▲ Upgrade' : d < 0 ? '▼ Weaker' : '= Same power';
       return Object.assign({
-        name: it.name, rar: RAR[it.r].n, col: RAR[it.r].c, desc: dOf(it),
+        name: it.name, rar: RAR[it.r].n, col: rcOf(it).c, desc: it.desc + (it.unique ? '  \u2605' : ''),
         meta: 'Lv ' + it.req + ' · ' + cmp + ' · sells ' + it.value + 'g',
         canEquip: it.req <= h.level, locked: it.req > h.level,
         equip: () => this.equipItem(it.id), sell: () => this.sellItem(it.id)
@@ -5110,6 +5542,7 @@ class Component extends DCLogic {
       msg: g.msg, hasMsg: !!g.msg,
       hasSave: !!this.saveMeta, saveInfo: this.saveMeta || '', continueGame: () => this.continueGame(), copySave: () => this.copySave(), pasteSave: () => this.pasteSave(), saveNow: () => this.saveNow(),
       isTitle: g.mode === 'title', isDead: g.mode === 'dead', isClear: g.mode === 'clear',
+      clearLines: g.rep ? g.rep.lines.map(l => ({ l: l.l, v: (l.v > 0 ? '+' : '') + l.v, sub: l.sub, col: l.col })) : [], clearScore: g.rep ? g.rep.total : 0, clearGrade: g.rep ? g.rep.grade : '', clearTime: fmtTime(g.cycleTime || 0), clearTotalTime: fmtTime(g.totalTime || 0), clearCycle: g.stage,
       stats: [
         { label: 'ATK', value: S.atk }, { label: 'DEF', value: S.def }, { label: 'HP', value: S.maxHp },
         { label: 'SPD', value: S.spd }, { label: 'CRIT', value: S.crit + '%' }, { label: 'MP', value: S.maxMp },
