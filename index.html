@@ -422,7 +422,6 @@ window.addEventListener('load', () => {
 
 </script>
 <script>
-
 const T = 32, VW = 800, VH = 450, GRAV = 1500, JUMP = 580, MAXLV = Infinity, PACK = 16, PACKSTEP = 4, PACKMAX = 80, POTION = 25;
 const RAR = [
   { n: 'Common', c: '#c4c8d8', d: '#7d8399', m: 1, w: 60 },
@@ -1170,15 +1169,55 @@ function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (
 
 // ---- randomized loot ----
 const WT = {
-  sword: { n: 'Sword', reach: 52, cd: 0.34, am: 1, kb: 1, crit: 0 },
-  dagger: { n: 'Dagger', reach: 38, cd: 0.2, am: 0.62, kb: 0.6, crit: 8 },
-  spear: { n: 'Spear', reach: 80, cd: 0.38, am: 1.05, kb: 1, crit: 0 },
-  axe: { n: 'Axe', reach: 50, cd: 0.42, am: 1.3, kb: 1, crit: 0 },
-  mace: { n: 'Mace', reach: 46, cd: 0.45, am: 1.35, kb: 1.8, crit: 0 },
-  greatsword: { n: 'Greatsword', reach: 68, cd: 0.58, am: 1.75, kb: 1.4, crit: 0 },
-  rapier: { n: 'Rapier', reach: 62, cd: 0.26, am: 0.8, kb: 0.5, crit: 6 },
-  scythe: { n: 'Scythe', reach: 74, cd: 0.5, am: 1.5, kb: 1.1, crit: 3 }
+  // as = 基础攻速系数(越大越快), am = 物理倍率, conv = 元素附魔转化率, poise = 削韧等级(1-5), kb = 击退
+  sword: { n: 'Sword', reach: 52, cd: 0.34, as: 1, am: 1, conv: 1.0, poise: 2, kb: 1, crit: 0 },
+  dagger: { n: 'Dagger', reach: 38, cd: 0.2, as: 1.7, am: 0.62, conv: 0.8, poise: 1, kb: 0.6, crit: 8 },
+  spear: { n: 'Polearm', reach: 80, cd: 0.38, as: 0.9, am: 1.05, conv: 1.15, poise: 3, kb: 1, crit: 0 },
+  axe: { n: 'Axe', reach: 50, cd: 0.42, as: 0.8, am: 1.3, conv: 1.3, poise: 3, kb: 1, crit: 0 },
+  mace: { n: 'Maul', reach: 46, cd: 0.45, as: 0.75, am: 1.35, conv: 1.6, poise: 5, kb: 1.8, crit: 0 },
+  greatsword: { n: 'Greatsword', reach: 68, cd: 0.58, as: 0.59, am: 1.75, conv: 1.45, poise: 4, kb: 1.4, crit: 0 },
+  rapier: { n: 'Rapier', reach: 62, cd: 0.26, as: 1.3, am: 0.8, conv: 0.85, poise: 1, kb: 0.5, crit: 6 },
+  scythe: { n: 'Scythe', reach: 74, cd: 0.5, as: 0.68, am: 1.5, conv: 1.2, poise: 3, kb: 1.1, crit: 3 }
 };
+/* ===== 六维伤害 / 非线性抗性 / 削韧 核心 ===== */
+const ELS = ['ice', 'fire', 'poison', 'bolt', 'mind'];
+const ELK = { ice: 'I', fire: 'F', poison: 'P', bolt: 'L', mind: 'M' };
+const ELN = { ice: 'Ice', fire: 'Fire', poison: 'Poison', bolt: 'Lightning', mind: 'Mind' };
+const ELC = { ice: '#8fd8ff', fire: '#ff8a3a', poison: '#9be04a', bolt: '#ffe14a', mind: '#c28bff' };
+const RES_MIN = -50, RES_MAX = 85;
+// 0%->1.5x, 50%->1.0x, 85%->0.25x, -50%->2.0x (分段线性)
+function resMul(r) {
+  r = Math.max(RES_MIN, Math.min(RES_MAX, r || 0));
+  return r <= 50 ? 1.5 - 0.01 * r : 1 - 0.75 * (r - 50) / 35;
+}
+function armorDR(def, lv) { return Math.min(0.85, Math.max(0, def) / (Math.max(0, def) + 30 + 4 * lv)); }
+const POISE_DMG = [0, 10, 18, 28, 42, 62];
+const BOSST = ['saint', 'warden', 'nura', 'dragon', 'pharaoh', 'witch', 'qin', 'longa', 'longb'];
+// 怪物元素攻击占比: type -> [元素, 占比]
+const ENEL = { ghoul: ['poison', 0.3], spider: ['poison', 0.5], wraith: ['mind', 0.6], saint: ['mind', 0.4], nura: ['mind', 0.5], frostwolf: ['ice', 0.4], yeti: ['ice', 0.35], draugr: ['ice', 0.5], wyrmling: ['fire', 0.4], dragon: ['fire', 0.6], mummy: ['mind', 0.3], scarab: ['fire', 0.3], cobra: ['poison', 0.7], scorpion: ['poison', 0.5], pharaoh: ['mind', 0.5], witch: ['mind', 0.4], jiangshi: ['poison', 0.3], lantern: ['fire', 0.7], qin: ['mind', 0.3], longa: ['bolt', 0.5], longb: ['fire', 0.6], warden: ['bolt', 0.2], gargoyle: ['ice', 0.15] };
+// 怪物元素抗性(未列出=0%, 承受150%)
+const ENRES = {
+  ghoul: { poison: 40, mind: 30, ice: 20 }, skel: { poison: 70, mind: 50, ice: 30, fire: -25 }, wraith: { mind: 60, poison: 70, ice: 40, fire: -25, bolt: -25 },
+  revenant: { fire: 20, ice: 20, poison: 60, mind: 40 }, gargoyle: { fire: 50, ice: 30, poison: 70, bolt: -25 }, spider: { poison: 70, fire: -25 },
+  warden: { fire: 25, ice: 25, bolt: 25, poison: 50, mind: 50 }, saint: { mind: 70, poison: 60, fire: 30, ice: 30, bolt: 30 }, nura: { mind: 60, ice: 40, fire: 40, poison: 50, bolt: 40 },
+  frostwolf: { ice: 75, fire: -25 }, harpy: { bolt: -25 }, yeti: { ice: 75, fire: -25, poison: 25 }, draugr: { ice: 60, poison: 60, mind: 50, fire: -25 },
+  wyrmling: { fire: 60, ice: -25 }, dragon: { fire: 75, ice: -20, poison: 40, bolt: 25 }, mummy: { poison: 70, mind: 40, fire: -50, ice: 25 },
+  scarab: { fire: 30, poison: 50 }, scorpion: { poison: 75, fire: 10 }, cobra: { poison: 85, ice: -25 }, pharaoh: { mind: 60, poison: 60, fire: 20, ice: 20, bolt: 20 },
+  witch: { mind: 70, fire: 40, poison: 40, ice: 30 }, terra: { poison: 75, mind: 60, bolt: 25, fire: 20, ice: 20 }, jiangshi: { poison: 60, mind: 50, fire: -50, ice: 20 },
+  lantern: { fire: 75, ice: -25 }, qin: { mind: 60, fire: 40, ice: 40, poison: 60, bolt: 40 }, longa: { bolt: 75, ice: 50, fire: -20 }, longb: { fire: 85, ice: -20, bolt: -10 }
+};
+function elOfKind(k) {
+  k = String(k || '');
+  if (/fire|flame|ember|cinder|lava|burn|pyre|magma|sun/.test(k)) return 'fire';
+  if (/ice|frost|snow|blizz|shard|rime|glac/.test(k)) return 'ice';
+  if (/poison|venom|toxic|acid|spit|plague/.test(k)) return 'poison';
+  if (/bolt|light|thunder|spark|storm|zap|volt/.test(k)) return 'bolt';
+  if (/soul|curse|hex|psy|wail|dream|mind|void|spirit|shadow|dark/.test(k)) return 'mind';
+  return null;
+}
+const ELKW = { ice: /frost|glac|ice|rime|winter|yeti|frozen|boreal|tide|snow/i, fire: /cinder|ember|pyre|flame|fire|sun|dawn|crimson|inferno|dragon|blaze|ash|vow/i, poison: /plague|venom|bog|toxic|widow|serpent|nightshade|rot|cobra|thorn/i, bolt: /storm|tempest|thunder|lightning|spark|gale|bolt|sky|star/i, mind: /void|soul|eclipse|abyss|shadow|dusk|hollow|wraith|death|dream|moon|night|vesper|seer|reaper|knell|choir/i };
+function elemsByName(n) { return ELS.filter(e => ELKW[e].test(n || '')); }
+
 const SK = {
   sword: [{ n: 'Crescent Wave', cost: 6, cd: 1.1, d: 'Hurl a piercing wave of steel' }, { n: 'Whirlwind', cost: 10, cd: 3, d: 'Spin and slash everything near' }, { n: 'Dash Strike', cost: 12, cd: 4, d: 'Lunge through foes, untouchable' }],
   bow: [{ n: 'Power Shot', cost: 6, cd: 0.9, d: 'Heavy arrow pierces 3 foes' }, { n: 'Arrow Volley', cost: 10, cd: 3, d: 'Fan of 5 arrows' }, { n: 'Explosive Arrow', cost: 14, cd: 5, d: 'Detonates on impact' }],
@@ -1226,7 +1265,18 @@ const AFX = [
   { k: 'drt', suf: [' of Razors', ' of Whirling Steel', ' of the Blade Storm'], b: 7 }, { k: 'lit', suf: [' of Storms', ' of Thunder', ' of the Tempest'], b: 7 },
   { k: 'cdr', suf: [' of Focus', ' of Alacrity', ' of Time'], b: 2.2 }, { k: 'mpr', suf: [' of Thrift', ' of Economy', ' of the Well'], b: 2.2 },
   { k: 'gf', suf: [' of Plunder', ' of Fortune', ' of the Dragon Hoard'], b: 3.5 }, { k: 'mf', suf: [' of the Magpie', ' of Discovery', ' of Revelation'], b: 1.4 },
-  { k: 'xpb', suf: [' of Learning', ' of the Sage', ' of Enlightenment'], b: 2 }
+  { k: 'xpb', suf: [' of Learning', ' of the Sage', ' of Enlightenment'], b: 2 },
+  { k: 'ias', suf: [' of Swiftness', ' of Quickening', ' of the Blur'], b: 1.5, sl: ['weapon', 'gloves', 'ring', 'amulet', 'belt'] },
+  { k: 'rI', suf: [' of Frostward', ' of Winter Ward', ' of the Glacier'], b: 1.5, sl: ['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'] },
+  { k: 'rF', suf: [' of Cinderward', ' of Flame Ward', ' of the Furnace'], b: 1.5, sl: ['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'] },
+  { k: 'rP', suf: [' of Antidote', ' of Venom Ward', ' of the Viper'], b: 1.5, sl: ['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'] },
+  { k: 'rL', suf: [' of Grounding', ' of Storm Ward', ' of the Lightning Rod'], b: 1.5, sl: ['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'] },
+  { k: 'rM', suf: [' of Clarity', ' of Mind Ward', ' of the Unbroken'], b: 1.5, sl: ['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'] },
+  { k: 'eI', pre: ['Chill ', 'Frostbite ', 'Rimebound '], b: 1.6, sl: ['weapon', 'gloves', 'ring', 'amulet'] },
+  { k: 'eF', pre: ['Smoldering ', 'Blazing ', 'Infernal '], b: 1.6, sl: ['weapon', 'gloves', 'ring', 'amulet'] },
+  { k: 'eP', pre: ['Toxic ', 'Venomous ', 'Plaguebound '], b: 1.6, sl: ['weapon', 'gloves', 'ring', 'amulet'] },
+  { k: 'eL', pre: ['Static ', 'Shocking ', 'Stormbound '], b: 1.6, sl: ['weapon', 'gloves', 'ring', 'amulet'] },
+  { k: 'eM', pre: ['Haunting ', 'Mindrending ', 'Voidbound '], b: 1.6, sl: ['weapon', 'gloves', 'ring', 'amulet'] }
 ];
 const LEGN = ['of the Fallen Saint', 'of Eternal Dusk', 'of the Hollow King', 'of Ashen Vows'];
 const ICONS = {
@@ -1236,7 +1286,7 @@ const ICONS = {
   shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', helm: 'M5 15a7 7 0 0 1 14 0v4H5zM9 13h6', armor: 'M7 4l5 2 5-2 3 4-3 3v9H7v-9L4 8z',
   gloves: 'M7 20v-8L5 7l2-1 2 4V4h2v6V3h2v7V5h2v8l2-2v7a3 3 0 0 1-3 3H7z', boots: 'M8 3h6v8l5 3v5H5v-4l3-1z', ring: 'M12 9a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM9 9l3-5 3 5', amulet: 'M6 3c0 7 3 9 6 9s6-2 6-9M12 12v2M12 14l3.5 3.5L12 22l-3.5-4.5z', belt: 'M3 8h18v7H3zM10 7h4v9h-4z'
 };
-const STATLBL = { atk: ['ATK', ''], crit: ['CRIT', '%'], def: ['DEF', ''], hp: ['HP', ''], spd: ['SPD', ''], mp: ['MP', ''], life: ['LIFESTEAL', '%'], blk: ['BLOCK', '%'], res: ['DMG REDUCTION', '%'], cdd: ['CRIT DAMAGE', '%'], regen: ['HP/SEC', ''], swd: ['SWORD SKILLS', '%'], bow: ['BOW SKILLS', '%'], drt: ['DART SKILLS', '%'], lit: ['LIGHTNING SKILLS', '%'], cdr: ['COOLDOWN', '%'], mpr: ['MANA COST', '%'], gf: ['GOLD FIND', '%'], mf: ['MAGIC FIND', '%'], xpb: ['XP GAIN', '%'] };
+const STATLBL = { atk: ['ATK', ''], crit: ['CRIT', '%'], def: ['DEF', ''], hp: ['HP', ''], spd: ['SPD', ''], mp: ['MP', ''], life: ['LIFESTEAL', '%'], blk: ['BLOCK', '%'], res: ['ALL RESIST', '%'], ias: ['ATTACK SPEED', '%'], rI: ['ICE RESIST', '%'], rF: ['FIRE RESIST', '%'], rP: ['POISON RESIST', '%'], rL: ['LIGHTNING RESIST', '%'], rM: ['MIND RESIST', '%'], eI: ['ICE ENCHANT', '%'], eF: ['FIRE ENCHANT', '%'], eP: ['POISON ENCHANT', '%'], eL: ['LIGHTNING ENCHANT', '%'], eM: ['MIND ENCHANT', '%'], cdd: ['CRIT DAMAGE', '%'], regen: ['HP/SEC', ''], swd: ['SWORD SKILLS', '%'], bow: ['BOW SKILLS', '%'], drt: ['DART SKILLS', '%'], lit: ['LIGHTNING SKILLS', '%'], cdr: ['COOLDOWN', '%'], mpr: ['MANA COST', '%'], gf: ['GOLD FIND', '%'], mf: ['MAGIC FIND', '%'], xpb: ['XP GAIN', '%'] };
 const STATK = Object.keys(STATLBL);
 const SETS = [
   { id: 'pilgrim', n: 'Pilgrim Vestige', lv: 1, p: { helm: 'Pilgrim Hood', armor: 'Pilgrim Cloak', gloves: 'Pilgrim Wraps', boots: 'Pilgrim Treads' }, fav: ['hp', 'def', 'regen'], b: { 2: { hp: 20, regen: 0.5 }, 4: { def: 6, res: 5, xpb: 10 } } },
@@ -1571,10 +1621,35 @@ function affixVal(a, p, rr) {
   if (a.k === 'regen') return Math.max(0.3, Math.round(v * 10) / 10);
   return Math.max(1, Math.round(v));
 }
-function descOfStats(st, slot, type) {
-  const parts = []; if (slot === 'weapon') parts.push(WT[type].n);
+function descOfStats(st, slot, type, arch) {
+  const parts = []; if (slot === 'weapon') parts.push(WT[type].n); else if (arch) parts.push(ARCHN[arch]);
   STATK.forEach(k => { if (st[k]) parts.push(fmtStat(k, st[k])); });
   return parts.join(' · ');
+}
+const ARCHN = { heavy: 'Heavy', arcane: 'Arcane', balanced: 'Balanced' };
+// 武器附魔 / 防具抗性配装 (重装: 高物防低抗性; 秘法: 低物防高双抗; 均衡: 中等三抗)
+function elemProfile(slot, ilvl, r, st, rr, force) {
+  const q = (1 + (ilvl - 1) * 0.22) * (0.8 + 0.1 * r), pick = n => { const a = ELS.slice(), o = []; while (o.length < n && a.length) o.push(a.splice(Math.floor(rr() * a.length), 1)[0]); return o; };
+  if (slot === 'weapon') {
+    const ch = [0, 0.2, 0.5, 0.75, 1, 1][r] || 0, n = r >= 3 && rr() < 0.4 ? 2 : 1;
+    if (force || rr() < ch) for (const e of (force || pick(n))) st['e' + ELK[e]] = Math.round((7 + 2.6 * q) * (n > 1 ? 0.75 : 1) * (0.85 + rr() * 0.3));
+    return null;
+  }
+  if (['armor', 'helm', 'shield', 'gloves', 'boots', 'belt'].indexOf(slot) < 0) return null;
+  if (r === 0 && (ilvl <= 1 || rr() < 0.5)) return null;
+  const x = rr(), arch = x < 0.36 ? 'heavy' : x < 0.68 ? 'arcane' : 'balanced', es = force || pick(arch === 'heavy' ? 1 : arch === 'arcane' ? 2 : 3);
+  const mulD = arch === 'heavy' ? 1.35 : arch === 'arcane' ? 0.6 : 1, mulR = arch === 'heavy' ? 0.7 : arch === 'arcane' ? 1.7 : 1.0;
+  if (st.def) st.def = Math.max(1, Math.round(st.def * mulD));
+  if (arch === 'heavy' && st.hp) st.hp = Math.round(st.hp * 1.1);
+  for (const e of es) st['r' + ELK[e]] = Math.min(30, Math.round(q * mulR * 1.35 * (0.85 + rr() * 0.3)));
+  return arch;
+}
+function themeProfile(it, name, rr) {
+  const es = elemsByName(name); if (!es.length) return;
+  const q = (1 + (it.ilvl - 1) * 0.22) * (0.8 + 0.1 * Math.min(4, it.r)), n = es.slice(0, 2);
+  if (it.slot === 'weapon') for (const e of n) it.stats['e' + ELK[e]] = Math.round((9 + 2.8 * q) * (n.length > 1 ? 0.8 : 1));
+  else if (['armor', 'helm', 'shield', 'gloves', 'boots', 'belt', 'ring', 'amulet'].indexOf(it.slot) >= 0) for (const e of n) it.stats['r' + ELK[e]] = Math.min(32, Math.round(q * 1.6 * (n.length > 1 ? 0.85 : 1) + 4));
+  it.desc = descOfStats(it.stats, it.slot, it.wt, it.arch);
 }
 function nameTier(ilvl, r) { return Math.min(7, Math.floor((ilvl - 1) / 2.4) + (r >= 2 ? 1 : 0)); }
 function makeItem(slot, ilvl, r, wt, opt) {
@@ -1584,7 +1659,8 @@ function makeItem(slot, ilvl, r, wt, opt) {
   const st = baseStats(slot, type, p, rr);
   const nt = nameTier(ilvl, r), tier = Math.min(4, Math.round(nt * 4 / 7)), sIdx = Math.min(2, Math.floor((ilvl - 1) / 7));
   const n = (slot === 'ring' || slot === 'amulet') ? Math.max(2, r + 1) : r;
-  let pool = AFX.filter(a => (r >= 2 || a.k !== 'mf') && (!opt.fav || true)), pre = [], suf = [];
+  let pool = AFX.filter(a => (r >= 2 || a.k !== 'mf') && (!a.sl || a.sl.indexOf(slot) >= 0)), pre = [], suf = [];
+  const arch = elemProfile(slot, ilvl, r, st, rr);
   for (let i = 0; i < n && pool.length; i++) {
     let cand = pool;
     if (r >= 2 && i === 0 && !pre.length) cand = pool.filter(a => a.pre); else if (r >= 2 && i === 1 && !suf.length) cand = pool.filter(a => a.suf);
@@ -1595,9 +1671,10 @@ function makeItem(slot, ilvl, r, wt, opt) {
   }
   const base = NAMES[type][nt];
   const name = r >= 4 ? (pre[0] || '') + base + ' ' + LEGN[Math.floor(rr() * LEGN.length)] : (pre[0] || '') + base + (suf[0] || '');
-  return { id: ITEM_ID++, slot, tier, wt: slot === 'weapon' ? type : null, r, ilvl, req: Math.max(1, ilvl - 1), stats: st, name, desc: descOfStats(st, slot, type), value: Math.max(2, Math.round(3 * p * (1 + r * 0.9) + n * 2)) };
+  return { id: ITEM_ID++, slot, tier, wt: slot === 'weapon' ? type : null, r, ilvl, req: Math.max(1, ilvl - 1), stats: st, name, arch, desc: descOfStats(st, slot, type, arch), value: Math.max(2, Math.round(3 * p * (1 + r * 0.9) + n * 2)) };
 }
-function makeSetItem(set, slotKey, ilvl) {
+function makeSetItem(set, slotKey, ilvl) { return makeSetItemFx(set, slotKey, ilvl); }
+function makeSetItem0(set, slotKey, ilvl) {
   const rr = Math.random, ent = set.p[slotKey], name = Array.isArray(ent) ? ent[0] : ent, type = slotKey === 'weapon' ? (Array.isArray(ent) ? ent[1] : 'sword') : slotKey;
   ilvl = Math.max(set.lv, ilvl);
   const p = (1 + (ilvl - 1) * 0.22) * RAR[5].m, st = baseStats(slotKey, type, p, rr);
@@ -1606,12 +1683,15 @@ function makeSetItem(set, slotKey, ilvl) {
   const nt = nameTier(ilvl, 3), tier = Math.min(4, Math.round(nt * 4 / 7));
   return { id: ITEM_ID++, slot: slotKey, tier, wt: slotKey === 'weapon' ? type : null, r: 5, set: set.id, ilvl, req: Math.max(1, ilvl - 1), stats: st, name, desc: descOfStats(st, slotKey, type), value: Math.round(3 * p * 3.4 + 6) };
 }
+function makeSetItemFx(set, slotKey, ilvl) {
+  const it = makeSetItem0(set, slotKey, ilvl); themeProfile(it, set.n + ' ' + it.name, Math.random); return it;
+}
 function makeUnique(ilvl, slotWant) {
   let L = LEGENDS.filter(l => l.lv <= ilvl + 3 && l.lv >= ilvl - 12 && (!slotWant || l.slot === slotWant)); if (!L.length) L = LEGENDS.filter(l => l.lv <= ilvl + 3 && (!slotWant || l.slot === slotWant));
   if (!L.length) return null;
   const l = L[Math.floor(Math.random() * L.length)], it = makeItem(l.slot, Math.max(ilvl, l.lv), 4, l.wt), u = 0.7 + 0.04 * Math.max(ilvl, l.lv);
   for (const k in l.x) { const v = (it.stats[k] || 0) + l.x[k] * u; it.stats[k] = k === 'regen' ? Math.round(v * 10) / 10 : Math.round(v); }
-  it.name = l.n; it.unique = true; it.desc = descOfStats(it.stats, l.slot, it.wt);
+  it.name = l.n; it.unique = true; it.desc = descOfStats(it.stats, l.slot, it.wt, it.arch); themeProfile(it, l.n, Math.random);
   return it;
 }
 function genItem(slot, ilvl, r, wt) {
@@ -1652,7 +1732,7 @@ function makeItemOld(slot, ilvl, r) {
 }
 function score(it) {
   const s = it.stats;
-  return (s.atk || 0) * 3 + (s.crit || 0) + (s.def || 0) * 3 + (s.hp || 0) * 0.4 + (s.spd || 0) * 0.7 + (s.mp || 0) * 0.4 + (s.life || 0) * 2 + (s.blk || 0) * 1.2 + ((s.swd || 0) + (s.bow || 0) + (s.drt || 0) + (s.lit || 0)) * 0.25 + ((s.cdr || 0) + (s.mpr || 0)) * 1.5 + (s.res || 0) * 2 + (s.regen || 0) * 5 + (s.cdd || 0) * 0.3 + (s.gf || 0) * 0.2 + (s.mf || 0) * 0.4 + (s.xpb || 0) * 0.5;
+  return (s.atk || 0) * 3 + (s.crit || 0) + (s.def || 0) * 3 + (s.hp || 0) * 0.4 + (s.spd || 0) * 0.7 + (s.mp || 0) * 0.4 + (s.life || 0) * 2 + (s.blk || 0) * 1.2 + ((s.swd || 0) + (s.bow || 0) + (s.drt || 0) + (s.lit || 0)) * 0.25 + ((s.cdr || 0) + (s.mpr || 0)) * 1.5 + (s.res || 0) * 2 + (s.regen || 0) * 5 + (s.cdd || 0) * 0.3 + (s.gf || 0) * 0.2 + (s.mf || 0) * 0.4 + (s.xpb || 0) * 0.5 + (s.ias || 0) * 2.2 + ((s.rI || 0) + (s.rF || 0) + (s.rP || 0) + (s.rL || 0) + (s.rM || 0)) * 1.1 + ((s.eI || 0) + (s.eF || 0) + (s.eP || 0) + (s.eL || 0) + (s.eM || 0)) * 1.6;
 }
 function rollRarityOld(bonus, min) {
   const w = RAR.map(x => x.w), f = [0.6, 1, 1.7, 2.8];
@@ -2551,12 +2631,14 @@ class Component extends DCLogic {
     }
     const sc = setCounts(h.equip);
     for (const id in sc) { const st = SETS.find(x => x.id === id); if (!st) continue; for (const t in st.b) if (sc[id] >= +t) for (const q in st.b[t]) X[q] += st.b[t][q]; }
-    let atk = 6 + 2 * (L - 1) + X.atk, def = 1 + Math.floor((L - 1) * 0.8) + X.def, hp = 50 + 10 * (L - 1) + h.hpUp + X.hp, spd = 165 + (L - 1) + X.spd, crit = 5 + X.crit;
+    const gp = this.g.p; let atk = 6 + 2 * (L - 1) + X.atk, def = 1 + Math.floor((L - 1) * 0.8) + X.def, hp = 50 + 10 * (L - 1) + h.hpUp + X.hp, spd = 165 + (L - 1) + X.spd, crit = 5 + X.crit;
     if (h.rally > 0) atk = Math.round(atk * 1.2);
     const BF = this.g.buf; if (BF) { if (BF.atk && BF.atk.t > 0) atk = Math.round(atk * BF.atk.m); if (BF.spd && BF.spd.t > 0) spd = Math.round(spd * BF.spd.m); }
-    return { atk, def, maxHp: hp, spd, crit, life: X.life, blk: Math.min(60, X.blk), maxMp: 30 + 4 * (L - 1) + X.mp,
+    if (gp) { if (gp.frz > 0) spd = Math.round(spd * 0.15); else if (gp.chill > 0) spd = Math.round(spd * (1 - Math.min(0.5, 0.1 * gp.chill))); }
+    const rs = {}, en = {}; for (const e of ELS) { const kk = ELK[e]; rs[e] = Math.max(RES_MIN, Math.min(RES_MAX, X['r' + kk] + X.res)); en[e] = X['e' + kk]; }
+    return { rs, en, ias: Math.min(100, X.ias), atk, def, maxHp: hp, spd, crit, life: X.life, blk: Math.min(60, X.blk), maxMp: 30 + 4 * (L - 1) + X.mp,
       sk: { sword: 1 + X.swd / 100, bow: 1 + X.bow / 100, darts: 1 + X.drt / 100, bolt: 1 + X.lit / 100 }, cdr: Math.min(45, X.cdr), mpr: Math.min(45, X.mpr),
-      res: Math.min(50, X.res), regen: X.regen, gf: X.gf, mf: Math.min(80, X.mf), xpb: X.xpb, cdd: X.cdd, sets: sc };
+      res: Math.min(RES_MAX, X.res), regen: X.regen, gf: X.gf, mf: Math.min(80, X.mf), xpb: X.xpb, cdd: X.cdd, sets: sc };
   }
 
   diffMul() { const d = this.props.difficulty; return d === 'Easy' ? 0.7 : d === 'Hard' ? 1.35 : 1; }
@@ -2837,6 +2919,18 @@ class Component extends DCLogic {
     const S = this.stats(), crit = !stomp && Math.random() * 100 < S.crit;
     let d = Math.max(1, Math.round(base * (0.9 + Math.random() * 0.2) * (crit ? 1.8 + S.cdd / 100 : 1)));
     this.sfx(crit ? 'crit' : 'hit'); this._lc = crit;
+    // ---- 独立双轨: 元素伤害按敌人抗性单独结算, 再与物理相加 ----
+    let eleD = 0, eleEl = null, eleTop = 0;
+    const pdirect = !stomp && !noLs;
+    if (pdirect) {
+      const wt0 = this.wtype(), rs = e.rs || (e.rs = ENRES[e.t] || {});
+      for (const el of ELS) {
+        const en = S.en[el]; if (!en) continue;
+        const v = base * (en / 100) * wt0.conv * (0.9 + Math.random() * 0.2) * (crit ? 1.8 + S.cdd / 100 : 1) * resMul(rs[el] || 0);
+        eleD += v; if (v > eleTop) { eleTop = v; eleEl = el; }
+        e._eh = e._eh || {}; e._eh[el] = v;
+      }
+    }
     if (e.t === 'revenant' && !stomp && dirn === -e.dir) { d = Math.max(1, Math.round(d * 0.2)); this.burst(e.x + e.w / 2 + e.dir * 12, e.y + 20, 6, '#ffe9a0'); this.text(e.x + e.w / 2, e.y - 16, 'BLOCK', '#d8cbb8'); }
     if (e.t === 'dragon' && (e.st === 'morph' || !e.started)) { this.text(e.x + e.w / 2, e.y - 10, 'IMMUNE', '#a89a8c'); return; }
     if (e.t === 'nura' && (e.st === 'morph' || !e.started)) { this.text(e.x + e.w / 2, e.y - 10, 'IMMUNE', '#a89a8c'); return; }
@@ -2848,13 +2942,43 @@ class Component extends DCLogic {
       if (e.shield <= 0) this.text(e.x + e.w / 2, e.y - 20, 'SHIELD BROKEN', '#6ab7ff');
       if (d <= 0) { e.flash = 0.08; this.text(e.x + e.w / 2, e.y - 4, '' + Math.round(sa), '#6ab7ff'); return; }
     }
-    e.hp -= d; e.flash = 0.12; e.hitT = 0.12;
+    if (e.brk > 0) d = Math.round(d * 1.25), eleD *= 1.25;
+    let eleI = Math.round(eleD); if (eleD > 0 && eleI < 1) eleI = 1;
+    e.hp -= d + eleI; e.flash = 0.12; e.hitT = 0.12;
+    if (pdirect) this.poiseHit(e, S, eleI);
     e.kb = dirn * ((e.t === 'saint' || e.t === 'warden' || e.t === 'nura' || e.t === 'dragon' || e.t === 'pharaoh' || e.t === 'witch' || e.t === 'qin' || e.t === 'longa' || e.t === 'longb') ? 70 : 230) * (stomp ? 1 : this.wtype().kb);
     if (S.life > 0 && !noLs) { const hh = this.g.hero; hh.hp = Math.min(S.maxHp, hh.hp + d * S.life / 100); this.g.dirty = true; }
     this.text(e.x + e.w / 2, e.y - 4, crit ? d + '!' : '' + d, crit ? '#ffd166' : '#ffffff');
+    if (eleI > 0 && eleEl) { this.text(e.x + e.w / 2 + 14, e.y - 18, '' + eleI, ELC[eleEl]); this.burst(e.x + e.w / 2, e.y + e.h / 2, 3, ELC[eleEl]); this.elHitEnemy(e, eleEl, eleI); }
+    d += eleI;
     this.burst(e.x + e.w / 2, e.y + e.h / 2, crit ? 8 : 4, crit ? '#ffd166' : '#ffffff');
     if (!this._fxd && !stomp) { this.fire('hit', { e, d, crit }); if (crit) this.fire('crit', { e, d }); }
     if (e.hp <= 0 && !e.dead) this.kill(e);
+  }
+
+  // 削韧: 重型武器更容易打出硬直 / 打断
+  poiseHit(e, S, eleI) {
+    const boss = BOSST.indexOf(e.t) >= 0, wt = this.wtype();
+    if (e.pz == null) { e.pmax = boss ? 220 + e.mhp * 0.02 : (30 + e.mhp * 0.1) * (e.elite ? 1.5 : 1); e.pz = e.pmax; }
+    let pd = POISE_DMG[wt.poise] * (this.g.p.cmb === 2 ? 1.5 : 1) * (e._eh && e._eh.bolt ? 1.4 : 1);
+    e.pz -= pd; e.pzT = 2.2;
+    if (e.pz <= 0 && !(e.pcd > 0)) {
+      e.pz = e.pmax; e.pcd = boss ? 7 : 3.5; e.brk = boss ? 1.6 : 1.2;
+      this.text(e.x + e.w / 2, e.y - 34, boss ? 'STAGGER' : 'POISE BREAK', '#ffb454');
+      if (boss) { e.ecd = Math.max(e.ecd || 0, 0) + 1.1; e.hitDone = true; }
+      else { e.stun = Math.max(e.stun || 0, 0.45 + wt.poise * 0.12); this.cancelCast && this.cancelCast(e); }
+      this.burst(e.x + e.w / 2, e.y + e.h / 2, 10, '#ffb454'); this.g.shake = Math.max(this.g.shake || 0, 0.12);
+    }
+  }
+  // 元素异常(敌方): 冰=叠冻结, 火=灼烧, 毒=中毒, 电=额外削韧, 精神=混乱
+  elHitEnemy(e, el, ele) {
+    const boss = BOSST.indexOf(e.t) >= 0, mul = clamp(resMul((e.rs || {})[el] || 0), 0.25, 1.6);
+    switch (el) {
+      case 'ice': e.chill = Math.min(5, (e.chill || 0) + mul); e.chillT = 3.5; e.slow = Math.max(e.slow || 0, 1.2); if (e.chill >= 5) { e.chill = 0; if (boss) e.slow = Math.max(e.slow, 2.5); else this.applyStatus(e, 'stun', 1.1); this.text(e.x + e.w / 2, e.y - 40, 'FROZEN', '#bfe8ff'); } break;
+      case 'fire': e.burn = { dps: Math.max(1, ele * 0.45), t: 3 }; break;
+      case 'poison': e.psn = { dps: Math.max(1, ele * 0.4), t: 4 }; break;
+      case 'mind': if (!boss && Math.random() < 0.22 * mul) this.applyStatus(e, 'conf', 1.6); break;
+    }
   }
 
   kill(e) {
@@ -2866,7 +2990,7 @@ class Component extends DCLogic {
       if (e.elite.k === 'boom') {
         const bx = e.x + e.w / 2, by = e.y + e.h / 2;
         this.explode(bx, by, 80, e.atk * 1.0);
-        if (Math.hypot(this.g.p.x + 11 - bx, this.g.p.y + 17 - by) < 90 && this.g.p.inv <= 0) this.damagePlayer(this.edmg(e.atk * 1.6), bx);
+        if (Math.hypot(this.g.p.x + 11 - bx, this.g.p.y + 17 - by) < 90 && this.g.p.inv <= 0) this.damagePlayer(this.edmg(e.atk * 1.6, undefined, e), bx);
         if (this.g.mode !== 'play') return;
       }
     }
@@ -3034,7 +3158,14 @@ class Component extends DCLogic {
     for (let i = 0; i < (crit || fin ? 7 : 4); i++) { const a = (p.face > 0 ? 0 : Math.PI) + (Math.random() - 0.5) * 1.6; this.cur.fx.push({ x, y, vx: Math.cos(a) * (120 + Math.random() * 180), vy: Math.sin(a) * 140 - 40, t: 0.22 + Math.random() * 0.15, m: 0.4, col: crit ? '#ffe9a0' : '#ffffff', s: 2 }); }
   }
 
-  wtype() { const w = this.g.hero.equip.weapon; return WT[(w && w.wt) || 'sword']; }
+  wtype() {
+    const w = this.g.hero.equip.weapon, k = (w && w.wt) || 'sword', S = this.stats();
+    const f = Math.max(0.35, S.spd / 165 * (1 + S.ias / 100)), key = k + ':' + f.toFixed(2);
+    if (this._wtk === key) return this._wtv;
+    // 最终攻速 = 角色行动速度 × 武器基础攻速系数 × (1 + 攻速加成%)
+    const b = WT[k], v = Object.assign({}, b, { cd: 0.34 / (b.as * f), aps: b.as * f });
+    this._wtk = key; this._wtv = v; return v;
+  }
 
   // Stronger enemies (type rank, room tier, cycle) roll higher item level and better rarity.
   rollGear(e) {
@@ -3083,10 +3214,11 @@ class Component extends DCLogic {
     const g = this.g, p = g.p, h = g.hero, S0 = this.stats();
     this.sfx('hurt'); g.hs = Math.max(g.hs || 0, 0.05); g.kx = (p.x < fromX ? -1 : 1) * 4;
     if (S0.blk && Math.random() * 100 < S0.blk) { dmg = Math.max(1, Math.round(dmg * 0.4)); this.text(p.x + 11, p.y - 22, 'BLOCK', '#d8cbb8'); this.burst(p.x + 16 * p.face, p.y + 16, 5, '#ffe9a0'); }
-    if (S0.res) dmg = Math.max(1, Math.round(dmg * (1 - S0.res / 100)));
+    const pel = this._pel; this._pel = null;
     if (h.abs > 0) { const ab = Math.min(h.abs, dmg); h.abs -= ab; dmg -= ab; this.text(p.x + 11, p.y - 22, 'ABSORB', '#9ad8f0'); if (dmg <= 0) { p.inv = 0.5; this.touch(); return; } }
     const src = this.dmgSrc;
     if (src && src.elite) { if (src.elite.k === 'vamp') src.hp = Math.min(src.mhp, src.hp + dmg * 3); if (src.elite.k === 'venom') this.poison(Math.max(3, dmg * 0.25), 5); }
+    if (pel) this.elStatus(pel);
     h.hp -= dmg; p.inv = 1; p.vx = (p.x < fromX ? -1 : 1) * 230; p.vy = -260; p.onGround = false; g.shake = 0.2;
     this.text(p.x + 11, p.y - 6, '-' + dmg, '#c4303c');
     this.burst(p.x + 11, p.y + 14, 6, '#c4303c');
@@ -3100,7 +3232,7 @@ class Component extends DCLogic {
 
   hurt(e) {
     const S = this.stats();
-    this.damagePlayer(Math.max(1, Math.round(e.atk * this.diffMul() - S.def)), e.x);
+    this.damagePlayer(this.edmg(e.atk, undefined, e), e.x);
   }
 
   die() {
@@ -3118,7 +3250,29 @@ class Component extends DCLogic {
 
   /* ---------- enemy AI ---------- */
   eshoot(k, x, y, vx, vy, dmg, o) { AU.shotSfx(k, Math.abs(x - this.g.p.x)); this.cur.eshots.push(Object.assign({ k, x, y, vx, vy, dmg, life: 3, grav: 0, r: 7, home: false, rot: 0 }, o || {})); }
-  edmg(base) { return Math.max(1, Math.round(base * this.diffMul() - this.stats().def)); }
+  // 双轨结算: 物理部分走护甲减伤, 元素部分走抗性乘区, 两者相加
+  edmg(base, el, src) {
+    const S = this.stats(), dm = this.diffMul(), L = this.g.hero.level; let f = 0;
+    if (el === undefined) { const s0 = src || this.dmgSrc, pr = s0 && ENEL[s0.t]; if (pr) { el = pr[0]; f = pr[1]; } else el = null; }
+    else if (el) f = 0.7;
+    const phys = base * dm * (1 - f) * (1 - armorDR(S.def, L));
+    let ele = 0, mul = 1; if (el && f) { mul = resMul(S.rs[el]); ele = base * dm * f * mul; }
+    this._pel = ele >= 1 ? { el, ele, mul } : null;
+    return Math.max(1, Math.round(phys + ele));
+  }
+  // 元素异常: 冰=减速/冻结, 火=灼烧, 毒=中毒, 电=打断, 精神=扣蓝
+  elStatus(pel) {
+    const g = this.g, p = g.p, h = g.hero, mc = clamp(pel.mul, 0.25, 1.6), x = p.x + 11, y = p.y - 26;
+    if (pel.mul > 1.12) this.text(x, y, ELN[pel.el].toUpperCase() + ' +' + Math.round((pel.mul - 1) * 100) + '%', ELC[pel.el]);
+    else if (pel.mul < 0.9) this.text(x, y, 'RESISTED', '#a89a8c');
+    switch (pel.el) {
+      case 'ice': p.chill = Math.min(5, (p.chill || 0) + mc); p.chillT = 3.5; if (p.chill >= 5 && !(p.frz > 0)) { p.frz = 0.9; p.chill = 0; p.atkCd = Math.max(p.atkCd, 0.9); this.text(x, y - 12, 'FROZEN', '#bfe8ff'); } break;
+      case 'fire': p.burn = { dps: Math.max(1, pel.ele * 0.18), t: 3 * mc }; break;
+      case 'poison': this.poison(Math.max(2, pel.ele * 0.2), 5 * mc); break;
+      case 'bolt': p.atkCd = Math.max(p.atkCd, 0.35 * mc); p.vx *= 0.35; break;
+      case 'mind': { const dr = Math.min(h.mp, pel.ele * 1.2); h.mp -= dr; if (dr >= 1) this.text(x, y - 12, '-' + Math.round(dr) + ' MP', '#c28bff'); break; }
+    }
+  }
   hazard(k, x, y, w, h, delay, life, dmg) { AU.hazSfx(k, Math.abs(x - this.g.p.x)); this.cur.hz.push({ k, x, y, w, h, delay, life, dmg, hit: false, d0: delay }); }
 
   gmove(e, dt, sp, free) {
@@ -3382,7 +3536,7 @@ class Component extends DCLogic {
       if (s.wave) { if (this.solid(Math.floor((s.x + Math.sign(s.vx) * 14) / T), Math.floor(s.y / T))) return false; }
       else if (s.k !== 'soul' && this.solid(Math.floor(s.x / T), Math.floor(s.y / T))) { this.burst(s.x, s.y, 5, (s.k === 'fire' || s.k === 'dfire' || s.k === 'ember') ? '#ff8a40' : (s.k === 'ice' || s.k === 'iarrow' || s.k === 'snow') ? '#cfeaff' : '#a89a8c'); return false; }
       const box = s.wave ? { x: s.x - s.r, y: s.y - 24, w: s.r * 2, h: 48 } : { x: s.x - s.r, y: s.y - s.r, w: s.r * 2, h: s.r * 2 };
-      if (p.inv <= 0 && hit(p, box)) { if (s.poison) this.poison(Math.max(3, this.edmg(s.dmg) * 0.3), 5); this.damagePlayer(this.edmg(s.dmg), s.x); return false; }
+      if (p.inv <= 0 && hit(p, box)) { if (s.poison) this.poison(Math.max(3, this.edmg(s.dmg, 'poison') * 0.3), 5); this.damagePlayer(this.edmg(s.dmg, elOfKind(s.k)), s.x); return false; }
       return true;
     });
     cur.hz = cur.hz.filter(z => {
@@ -3390,7 +3544,7 @@ class Component extends DCLogic {
       if (z.delay > 0) return true;
       z.life -= dt;
       if (z.life <= 0) return false;
-      if (!z.hit && p.inv <= 0 && hit(p, z)) { z.hit = true; this.damagePlayer(this.edmg(z.dmg), z.x + z.w / 2); }
+      if (!z.hit && p.inv <= 0 && hit(p, z)) { z.hit = true; this.damagePlayer(this.edmg(z.dmg, elOfKind(z.k)), z.x + z.w / 2); }
       return true;
     });
   }
@@ -3865,6 +4019,12 @@ class Component extends DCLogic {
     p.inv = Math.max(0, p.inv - dt); p.want = Math.max(0, p.want - dt); if (this.keys.KeyJ || this.keys.KeyX || this.keys.KeyZ) p.want = Math.max(p.want, 0.1); p.dropT = Math.max(0, p.dropT - dt);
     p.atkCd -= dt; p.atkT -= dt; p.tameCd = Math.max(0, (p.tameCd || 0) - dt);
     if (h.rally > 0) h.rally -= dt;
+    if (p.chillT > 0) { p.chillT -= dt; if (p.chillT <= 0) p.chill = 0; }
+    if (p.frz > 0) p.frz -= dt;
+    if (p.burn && p.burn.t > 0) {
+      p.burn.t -= dt; p.bnAcc = (p.bnAcc || 0) + p.burn.dps * dt;
+      if (p.bnAcc >= 1) { const q = Math.floor(p.bnAcc); p.bnAcc -= q; h.hp -= q; this.text(p.x + 11, p.y - 6, '-' + q, '#ff8a3a'); g.dirty = true; if (h.hp <= 0) { h.hp = 0; this.die(); return; } }
+    }
     if (p.poison && p.poison.t > 0) {
       p.poison.t -= dt; p.pAcc = (p.pAcc || 0) + p.poison.dps * dt;
       if (p.pAcc >= 1) { const q = Math.floor(p.pAcc); p.pAcc -= q; h.hp -= q; this.text(p.x + 11, p.y - 6, '-' + q, '#9be04a'); g.dirty = true; if (h.hp <= 0) { h.hp = 0; this.die(); return; } }
@@ -3936,7 +4096,7 @@ class Component extends DCLogic {
     }
     // attack: anticipation -> burst slash -> follow-through recovery (cancelable into the next combo hit)
     {
-      const wt = this.wtype(), sf = clamp(wt.cd / 0.34, 0.6, 1.5);
+      const wt = this.wtype(), sf = clamp(wt.cd / 0.34, 0.4, 1.8);
       const wk0 = (h.equip.weapon && h.equip.weapon.wt) || 'sword';
       const TM = { dagger: [0.75, 0.8], rapier: [0.8, 0.9], spear: [0.95, 1], sword: [1, 1], axe: [1.1, 1.05], mace: [1.4, 1.2], greatsword: [1.25, 1.1], scythe: [1.1, 1.05] }[wk0] || [1, 1];
       const W = 0.1 * sf * TM[0], B = 0.05 + 0.012 * sf, Rc = Math.max(0.22, (wt.cd - 0.1 * sf - B + 0.12) * TM[1]);
@@ -4003,6 +4163,9 @@ class Component extends DCLogic {
       if (e.dead) continue;
       e.flash -= dt;
       const dx = (p.x + 11) - (e.x + e.w / 2), dy = (p.y + 17) - (e.y + e.h / 2);
+      if (e.pz != null) { if (e.pzT > 0) e.pzT -= dt; else e.pz = Math.min(e.pmax, e.pz + 25 * dt); }
+      if (e.pcd > 0) e.pcd -= dt; if (e.brk > 0) e.brk -= dt; if (e.chillT > 0) { e.chillT -= dt; if (e.chillT <= 0) e.chill = 0; }
+      if (e.psn && e.psn.t > 0) { e.psn.t -= dt; e.pAcc = (e.pAcc || 0) + e.psn.dps * dt; if (e.pAcc >= 1) { const q = Math.floor(e.pAcc); e.pAcc -= q; this.dot(e, q); if (e.dead) continue; } }
       if (e.burn && e.burn.t > 0) { e.burn.t -= dt; e.bAcc = (e.bAcc || 0) + e.burn.dps * dt; if (e.bAcc >= 1) { const q = Math.floor(e.bAcc); e.bAcc -= q; this.dot(e, q); } if (e.dead) continue; }
       if (e.stun > 0) { e.stun -= dt; this.idleEnemy(e, dt); continue; }
       if (e.charm > 0 || e.conf > 0) { this.confusedTick(e, dt); continue; }
@@ -7305,7 +7468,9 @@ class Component extends DCLogic {
       };
     }
     const pct = (v) => Math.round((v - 1) * 100);
-    const skillText = 'Skill power  Sword +' + pct(S.sk.sword) + '% · Bow +' + pct(S.sk.bow) + '% · Darts +' + pct(S.sk.darts) + '% · Lightning +' + pct(S.sk.bolt) + '%   Cooldown -' + S.cdr + '% · Mana cost -' + S.mpr + '%' + (S.res || S.regen || S.cdd || S.gf || S.mf || S.xpb ? '   Dmg reduction ' + Math.round(S.res) + '% · Regen ' + (Math.round(S.regen * 10) / 10) + '/s · Crit dmg +' + Math.round(S.cdd) + '% · Gold find ' + Math.round(S.gf) + '% · Magic find ' + Math.round(S.mf) + '% · XP +' + Math.round(S.xpb) + '%' : '') + Object.keys(S.sets).map(id => ' · ◆ ' + SETS.find(x => x.id === id).n + ' ' + S.sets[id] + '/' + Object.keys(SETS.find(x => x.id === id).p).length).join('');
+    const wtp = this.wtype(), resTxt = ELS.map(k => ELN[k] + ' ' + Math.round(S.rs[k]) + '%(x' + (Math.round(resMul(S.rs[k]) * 100) / 100) + ')').join(' · '), enTxt = ELS.filter(k => S.en[k]).map(k => ELN[k] + ' +' + Math.round(S.en[k]) + '%').join(' · ');
+    const combatText = 'Armor ' + S.def + ' (-' + Math.round(armorDR(S.def, h.level) * 100) + '% physical) · Resist ' + resTxt + ' · Weapon ' + wtp.n + ' ×' + (Math.round(wtp.aps * 100) / 100) + ' atk speed, poise ' + wtp.poise + ', elem conv ×' + wtp.conv + (enTxt ? ' · Enchant ' + enTxt : '');
+    const skillText = combatText + '   ' + 'Skill power  Sword +' + pct(S.sk.sword) + '% · Bow +' + pct(S.sk.bow) + '% · Darts +' + pct(S.sk.darts) + '% · Lightning +' + pct(S.sk.bolt) + '%   Cooldown -' + S.cdr + '% · Mana cost -' + S.mpr + '%' + (S.res || S.regen || S.cdd || S.gf || S.mf || S.xpb ? '   Dmg reduction ' + Math.round(S.res) + '% · Regen ' + (Math.round(S.regen * 10) / 10) + '/s · Crit dmg +' + Math.round(S.cdd) + '% · Gold find ' + Math.round(S.gf) + '% · Magic find ' + Math.round(S.mf) + '% · XP +' + Math.round(S.xpb) + '%' : '') + Object.keys(S.sets).map(id => ' · ◆ ' + SETS.find(x => x.id === id).n + ' ' + S.sets[id] + '/' + Object.keys(SETS.find(x => x.id === id).p).length).join('');
     const slots = SLOTS.map((k) => {
       const it = h.equip[k];
       return Object.assign({
@@ -7358,6 +7523,5 @@ class Component extends DCLogic {
     };
   }
 }
-
 </script>
 </body></html>
