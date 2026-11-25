@@ -39,7 +39,7 @@ body{margin:0;background:#0b0809}
 <span><span class="lr-key">W</span> <span class="lr-key">Space</span> jump · door</span>
 <span><span class="lr-key">J</span> sword</span>
 <span><span class="lr-key">K</span> <span class="lr-key">L</span> <span class="lr-key">I</span> skills</span>
-<span><span class="lr-key">E</span> <span class="lr-key">1-4</span> weapon</span>
+<span><span class="lr-key">E</span> <span class="lr-key">1-0</span> hotbar · <span class="lr-key">Mouse L/R</span></span>
 <span><span class="lr-key">Tab</span> character</span>
 <span><span class="lr-key">T</span> tame</span>
 <span><span class="lr-key">P</span> pet</span>
@@ -49,7 +49,7 @@ body{margin:0;background:#0b0809}
 </div>
 
 <div style="position: relative; width: 800px; height: 450px; box-shadow: 0 0 0 2px #4a2a2a; background: #0d0809">
-<canvas id="lr-canvas" ref="{{ canvasRef }}" width="800" height="450" style="display: block; width: 800px; height: 450px"></canvas>
+<canvas id="lr-canvas" ref="{{ canvasRef }}" onMouseDown="{{ onMouseDown }}" onMouseUp="{{ onMouseUp }}" onMouseLeave="{{ onMouseLeave }}" onContextMenu="{{ onCtx }}" width="800" height="450" style="display: block; width: 800px; height: 450px"></canvas>
 
 <div style="position: absolute; left: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: rgba(11,8,9,0.78); width: 220px">
 <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700"><span>LV {{ level }}</span><span style="color: #e8808a">HP {{ hpText }}</span></div>
@@ -61,19 +61,8 @@ body{margin:0;background:#0b0809}
 </div>
 
 
-<div style="position: absolute; left: 12px; top: 136px; display: flex; flex-direction: column; gap: 4px; width: 220px">
-<sc-for list="{{ skills }}" as="k" hint-placeholder-count="3">
-<div style="position: relative; display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: rgba(11,8,9,0.78); overflow: hidden; border-left: 3px solid {{ k.col }}">
-<div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ k.cdW }}; background: rgba(120,40,40,0.55)"></div>
-<span class="lr-key" style="position: relative">{{ k.key }}</span>
-<span style="position: relative; flex: 1; font-size: 13px; font-weight: 600; line-height: 1.1; color: {{ k.tc }}">{{ k.name }}</span>
-<span style="position: relative; font-size: 12px; color: #6ab7ff">{{ k.cost }}</span>
-</div>
-</sc-for>
-</div>
-
 <sc-if value="{{ hasPet }}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; left: 12px; top: 236px; width: 220px; padding: 5px 8px; background: rgba(11,8,9,0.78); border-left: 3px solid #ffb7d0; display: flex; flex-direction: column; gap: 4px">
+<div style="position: absolute; left: 12px; top: 136px; width: 220px; padding: 5px 8px; background: rgba(11,8,9,0.78); border-left: 3px solid #ffb7d0; display: flex; flex-direction: column; gap: 4px">
 <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600"><span style="color: #ffb7d0">♥ {{ petName }}</span><span>Lv {{ petLv }}</span></div>
 <div style="height: 4px; background: #2a1c1a"><div style="height: 4px; background: #ffb7d0; width: {{ petXpW }}"></div></div>
 </div>
@@ -82,11 +71,30 @@ body{margin:0;background:#0b0809}
 <div style="position: absolute; right: 12px; top: 12px; display: flex; gap: 8px; font-size: 14px; font-weight: 700">
 <div style="padding: 6px 10px; background: rgba(11,8,9,0.78)">{{ roomName }}</div>
 <div style="padding: 6px 10px; background: rgba(11,8,9,0.78); color: #ffd166">{{ gold }} GOLD</div>
-<div style="padding: 6px 10px; background: rgba(11,8,9,0.78)">POTIONS {{ potions }}</div>
+<div style="padding: 6px 10px; background: rgba(11,8,9,0.78)">POTIONS {{ potions }} · <span style="color: #6ab7ff">MANA {{ mpots }}</span></div>
 </div>
 
+<div style="position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; gap: 3px; pointer-events: none">
+<sc-for list="{{ hotbar }}" as="s" hint-placeholder-count="12">
+<button class="lr-btn" onClick="{{ s.go }}" aria-label="{{ s.tip }}" style="pointer-events: auto; position: relative; width: 54px; height: 54px; min-height: 54px; padding: 0; overflow: hidden; background: rgba(11,8,9,0.88); border: 2px solid {{ s.col }}; margin-left: {{ s.ml }}">
+<div style="position: absolute; left: 0; right: 0; top: 0; height: {{ s.cdW }}; background: rgba(120,40,40,0.6)"></div>
+<span style="position: absolute; left: 3px; top: 1px; font-size: 10px; color: #c9a24a; font-weight: 700">{{ s.key }}</span>
+<span style="position: absolute; left: 2px; right: 2px; top: 14px; font-size: 10px; line-height: 1.1; color: {{ s.tc }}; font-weight: 600; text-align: center">{{ s.name }}</span>
+<span style="position: absolute; right: 3px; bottom: 1px; font-size: 10px; color: #6ab7ff">{{ s.cost }}</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{ hbShow }}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%); width: 340px; max-height: 250px; overflow: auto; background: rgba(11,8,9,0.97); border: 2px solid #c9a24a; padding: 6px; display: flex; flex-direction: column; gap: 3px">
+<div style="font-size: 12px; color: #c9a24a">{{ hbTitle }}</div>
+<sc-for list="{{ hbOpts }}" as="o" hint-placeholder-count="4">
+<button class="lr-btn" style="min-height: 28px; font-size: 12px; text-align: left; padding: 0 8px; background: {{ o.bg }}" onClick="{{ o.pick }}">{{ o.label }}</button>
+</sc-for>
+</div>
+</sc-if>
+
 <sc-if value="{{ hasMsg }}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; pointer-events: none">
+<div style="position: absolute; left: 0; right: 0; bottom: 74px; display: flex; justify-content: center; pointer-events: none">
 <div style="padding: 8px 14px; background: rgba(11,8,9,0.88); border: 2px solid #c9a24a; font-size: 15px; font-weight: 600; color: #f0e3c0">{{ msg }}</div>
 </div>
 </sc-if>
@@ -168,6 +176,7 @@ body{margin:0;background:#0b0809}
 <button class="lr-btn" style="flex: 1; min-height: 38px; font-size: 13px; background: {{ eqBg }}" onClick="{{ goEq }}">Equipment</button>
 <button class="lr-btn" style="flex: 1; min-height: 38px; font-size: 13px; padding: 0 4px; background: {{ packBg }}" onClick="{{ goPack }}">Pack {{ packCount }}/{{ packMax }}</button>
 <button class="lr-btn" style="flex: 1; min-height: 38px; font-size: 13px; padding: 0 4px; background: {{ petsBg }}" onClick="{{ goPets }}">Pets {{ petCount }}/{{ petMax }}</button>
+<button class="lr-btn" style="flex: 1; min-height: 38px; font-size: 13px; padding: 0 4px; background: {{ skillsBg }}" onClick="{{ goSkills }}">{{ skTabLabel }}</button>
 </div>
 
 <sc-if value="{{ tabEq }}" hint-placeholder-val="{{ true }}">
@@ -185,6 +194,38 @@ body{margin:0;background:#0b0809}
 <sc-if value="{{ s.has }}" hint-placeholder-val="{{ true }}">
 <button class="lr-btn" style="min-height: 40px; padding: 0 8px; font-size: 12px" onClick="{{ s.unequip }}" aria-label="Unequip {{ s.name }}">Remove</button>
 </sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabSkills }}" hint-placeholder-val="{{ false }}">
+<div class="lr-scroll" style="flex: 1 0 460px; min-height: 460px; max-height: 620px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; background: #231716"><span style="font-size: 14px; font-weight: 600; color: #ffd166">{{ skPts }}</span><button class="lr-btn" style="min-height: 30px; padding: 0 8px; font-size: 12px" onClick="{{ skReset }}">{{ skResetLabel }}</button></div>
+<div style="display: flex; gap: 4px">
+<sc-for list="{{ skTabs }}" as="q" hint-placeholder-count="4">
+<button class="lr-btn" style="flex: 1; min-height: 32px; font-size: 12px; padding: 0 2px; background: {{ q.bg }}" onClick="{{ q.go }}">{{ q.name }}</button>
+</sc-for>
+</div>
+<sc-for list="{{ skNodes }}" as="n" hint-placeholder-count="9">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<sc-if value="{{ n.hasHead }}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: #a89a8c; padding: 4px 2px 0; line-height: 1.2">{{ n.head }}</div>
+</sc-if>
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: {{ n.bg }}; border-left: 3px solid {{ n.col }}">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; line-height: 1.15; color: {{ n.tc }}"><span>{{ n.name }}</span><span style="font-size: 12px; color: #a89a8c">{{ n.rank }}</span></div>
+<div style="font-size: 12px; color: #d8cbb8; line-height: 1.2">{{ n.desc }}</div>
+<div style="font-size: 12px; color: #9ad0b5; line-height: 1.2">{{ n.now }}</div>
+<sc-if value="{{ n.hasBind }}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 4px; align-items: center"><span style="font-size: 12px; color: #a89a8c">Bind to</span>
+<button class="lr-btn" style="min-height: 26px; min-width: 32px; padding: 0 6px; font-size: 12px; background: {{ n.bk }}" onClick="{{ n.goK }}">K</button>
+<button class="lr-btn" style="min-height: 26px; min-width: 32px; padding: 0 6px; font-size: 12px; background: {{ n.bl }}" onClick="{{ n.goL }}">L</button>
+<button class="lr-btn" style="min-height: 26px; min-width: 32px; padding: 0 6px; font-size: 12px; background: {{ n.bi }}" onClick="{{ n.goI }}">I</button></div>
+</sc-if>
+</div>
+<button class="lr-btn" style="min-height: 40px; min-width: 40px; padding: 0 8px; font-size: 16px; opacity: {{ n.op }}" onClick="{{ n.learn }}" aria-label="Learn {{ n.name }}">{{ n.btn }}</button>
+</div>
 </div>
 </sc-for>
 </div>
@@ -260,9 +301,18 @@ body{margin:0;background:#0b0809}
 <div style="font-size: 12px; color: #ffd89a; line-height: 1.25; padding: 5px 6px; background: #1c1312">{{ skillText }}<br><span style="color: #a89a8c">{{ skillReq }}</span></div>
 
 <div style="display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 2px solid #4a2a2a">
-<div style="flex: 1; font-size: 14px; line-height: 1.2"><span style="color: #ffd166; font-weight: 700">{{ gold }} gold</span><br><span style="font-size: 12px; color: #a89a8c">{{ potions }} potion(s)</span></div>
-<button class="lr-btn" style="padding: 0 10px; font-size: 12px" onClick="{{ buyPotion }}" disabled="{{ cantBuy }}">Buy potion 25g</button>
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="flex: 1; font-size: 14px; line-height: 1.2"><span style="color: #ffd166; font-weight: 700">{{ gold }} gold</span><br><span style="font-size: 12px; color: #a89a8c">{{ potions }} health · {{ mpots }} mana</span></div>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<button class="lr-btn" style="padding: 0 10px; font-size: 12px; flex: 1" onClick="{{ buyPotion }}" disabled="{{ cantBuy }}">Buy {{ buyLabel }}</button>
 <button class="lr-btn" style="padding: 0 10px; font-size: 12px" onClick="{{ drinkPotion }}" disabled="{{ cantDrink }}">Drink (H)</button>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<button class="lr-btn" style="padding: 0 10px; font-size: 12px; flex: 1" onClick="{{ buyManaPot }}" disabled="{{ cantBuyMana }}">Buy {{ buyManaLabel }}</button>
+<button class="lr-btn" style="padding: 0 10px; font-size: 12px" onClick="{{ drinkMana }}" disabled="{{ cantDrinkMana }}">Mana (G)</button>
+</div>
 </div>
 </div>
 
@@ -509,7 +559,7 @@ function pickVar(tier) {
 }
 function varName(t, v) { const m = MV[v], base = ENM[t] || (PETD[t] && PETD[t].n) || t; if (!m.adj) return base; return m.adj[(Math.abs(hashU(t)) + v) % 3] + ' ' + base; }
 const FLY = ['bat', 'wraith', 'gargoyle', 'harpy', 'wyrmling', 'scarab', 'witch', 'lantern', 'longa', 'longb'];
-const FLYCH = 'bwyujxYG', DNAME = ['The Ember Wyrm', 'The Infernal Drake', 'The Crimson Calamity'], DCOL = ['#ff8a3a', '#ff4a2a', '#ff2a4a'];
+let FLYCH = 'bwyujxYG', DNAME = ['The Ember Wyrm', 'The Infernal Drake', 'The Crimson Calamity'], DCOL = ['#ff8a3a', '#ff4a2a', '#ff2a4a'];
 const ELITE = [
   { k: 'frenzy', n: 'Frenzied', c: '#ff6a3a' }, { k: 'vamp', n: 'Vampiric', c: '#e0405a' }, { k: 'shield', n: 'Bulwarked', c: '#6ab7ff' },
   { k: 'venom', n: 'Venomous', c: '#9be04a' }, { k: 'blink', n: 'Blinking', c: '#c28bff' }, { k: 'volley', n: 'Hexing', c: '#ffd166' }, { k: 'boom', n: 'Volatile', c: '#ff9a3a' }
@@ -1809,6 +1859,106 @@ const ENRES = {
   witch: { mind: 70, fire: 40, poison: 40, ice: 30 }, terra: { poison: 75, mind: 60, bolt: 25, fire: 20, ice: 20 }, jiangshi: { poison: 60, mind: 50, fire: -50, ice: 20 },
   lantern: { fire: 75, ice: -25 }, qin: { mind: 60, fire: 40, ice: 40, poison: 60, bolt: 40 }, longa: { bolt: 75, ice: 50, fire: -20 }, longb: { fire: 85, ice: -20, bolt: -10 }
 };
+/* ===== 79 D&D-inspired monster species (21 base + 79 = 100 regular types) ===== */
+const GEN = {}, BEH = {}, POOL = {};
+(function () {
+  // [id, name, baseChar, plan, w, h, [hp,atk,xp,spd mult], colA, colB, colC, features, element|null, resists, extra]
+  const L = [
+    ['goblin', 'Goblin', 'e', 'hum', 22, 32, [0.8, 0.9, 0.8, 1.2], '#6fa043', '#6b4a2a', '#ffd24a', 'ears,club', null, {}, { hs: 1.35, k: 0.9 }],
+    ['kobold', 'Kobold', 'e', 'hum', 20, 30, [0.7, 0.85, 0.8, 1.25], '#b5532f', '#5a3a2a', '#ffd24a', 'snout,spear,tail', null, {}, { hs: 1.2, k: 0.85 }],
+    ['zombie', 'Rotting Zombie', 'e', 'hum', 26, 40, [1.5, 1.0, 1.0, 0.6], '#7a8f6a', '#4a4a3a', '#d8e060', 'reach,wounds', ['poison', 0.25], { poison: 60, mind: 40 }, {}],
+    ['gnoll', 'Gnoll', 'e', 'hum', 28, 44, [1.3, 1.2, 1.2, 1.0], '#b08a4a', '#5a3a2a', '#ffd24a', 'ears,snout,axe,spots', null, {}, {}],
+    ['hobgoblin', 'Hobgoblin Legionary', 's', 'hum', 26, 42, [1.3, 1.2, 1.2, 1.0], '#c0703a', '#7a2a2a', '#ffd24a', 'ears,helm,sword,shield', null, {}, {}],
+    ['animarmor', 'Animated Armor', 's', 'hum', 28, 46, [1.6, 1.1, 1.4, 0.8], '#9aa4b2', '#6a7482', '#7fd8ff', 'armor,helm,sword,empty', null, { poison: 80, mind: 80, bolt: -20 }, { k: 1.1 }],
+    ['boneknight', 'Skeleton Knight', 's', 'hum', 24, 44, [1.4, 1.3, 1.5, 0.9], '#e4dcc8', '#4a4a58', '#ff4a4a', 'helm,sword,cape,bones', null, { poison: 70, mind: 50 }, {}],
+    ['bugbear', 'Bugbear', 's', 'hum', 30, 46, [1.5, 1.4, 1.4, 0.9], '#9a6a3a', '#4a3a2a', '#ffd24a', 'ears,fangs,club', null, {}, { hs: 1.15, k: 1.15 }],
+    ['specter', 'Specter', 'w', 'ghost', 26, 40, [0.9, 1.1, 1.1, 1.1], '#a9c9ff', '#5a7ab0', '#ffffff', 'wail', ['mind', 0.5], { mind: 60, poison: 70, ice: 40, fire: -25 }, {}],
+    ['shade', 'Shadow', 'w', 'ghost', 26, 40, [0.8, 1.3, 1.3, 1.2], '#2a2438', '#120f1a', '#ff4a6a', 'claws', ['mind', 0.5], { mind: 60, poison: 70, fire: 20, bolt: -25 }, {}],
+    ['banshee', 'Banshee', 'w', 'ghost', 26, 42, [1.0, 1.2, 1.4, 1.0], '#cfe6e0', '#7ab0a0', '#7fffe0', 'wail,hair', ['mind', 0.7], { mind: 70, poison: 70, ice: 30 }, {}],
+    ['polter', 'Poltergeist', 'w', 'ghost', 22, 30, [0.7, 1.0, 1.2, 1.4], '#d8c8ff', '#8a70c0', '#ffffff', 'flail', null, { mind: 40, poison: 60 }, {}],
+    ['orc', 'Orc Warrior', 'v', 'hum', 32, 48, [1.0, 1.0, 1.0, 1.1], '#5a8a4a', '#5a3a2a', '#ffd24a', 'tusk,axe,shield', null, {}, { hs: 1.1, k: 1.15 }],
+    ['ogre', 'Ogre', 'v', 'hum', 40, 62, [2.0, 1.5, 1.8, 0.8], '#b8956a', '#6a4a2a', '#ffd24a', 'club,fangs,belly', null, {}, { k: 1.3 }],
+    ['minotaur', 'Minotaur', 'v', 'hum', 36, 58, [1.8, 1.6, 1.8, 1.0], '#6a4a34', '#3a2a1a', '#ffd24a', 'horn,axe,snout,fur', null, {}, { k: 1.25 }],
+    ['troll', 'Troll', 'v', 'hum', 36, 60, [1.8, 1.3, 1.8, 0.9], '#4f9a6a', '#3a5a2a', '#ffd24a', 'nose,claws,fangs', null, { fire: -50, poison: 30 }, { hs: 1.1, k: 1.15 }],
+    ['imp', 'Imp', 'g', 'fly', 24, 24, [0.6, 1.0, 1.0, 1.3], '#c0392b', '#7a1a1a', '#ffdd55', 'wings:bat,horn,stinger', ['fire', 0.5], { fire: 90, ice: -25, poison: 60 }, {}],
+    ['quasit', 'Quasit', 'g', 'fly', 24, 26, [0.7, 1.0, 1.1, 1.2], '#3a7a5a', '#1a4a3a', '#ffdd55', 'wings:bat,horn,claws,fangs', ['poison', 0.5], { poison: 80, fire: 40 }, {}],
+    ['manticore', 'Manticore', 'g', 'fly', 46, 36, [1.5, 1.3, 1.5, 0.9], '#c08a3a', '#7a3a1a', '#ffdd55', 'wings:bat,mane,scorptail,legs', null, {}, {}],
+    ['stirge', 'Stirge', 'b', 'fly', 22, 16, [0.7, 1.0, 1.0, 1.1], '#a0522d', '#6a2a1a', '#ff3a3a', 'wings:insect,trunk', null, {}, {}],
+    ['dmantle', 'Darkmantle', 'b', 'eye', 24, 24, [1.2, 1.1, 1.2, 0.8], '#5a5a6a', '#2a2a3a', '#ffe14a', 'cap,tent', null, {}, {}],
+    ['direbat', 'Dire Bat', 'b', 'fly', 38, 24, [1.4, 1.3, 1.4, 1.0], '#4a2a3a', '#2a1624', '#ff4a4a', 'wings:bat,fangs', null, {}, {}],
+    ['ashmoth', 'Ash Moth', 'b', 'fly', 30, 24, [1.0, 1.0, 1.2, 0.9], '#c8b89a', '#8a7a5a', '#ffe14a', 'wings:moth,antenna,dust', ['poison', 0.3], { poison: 30 }, {}],
+    ['phasespi', 'Phase Spider', 'p', 'bug', 36, 20, [1.2, 1.1, 1.4, 1.0], '#5a4a9a', '#2a1a5a', '#c0a0ff', 'spi,phase', ['mind', 0.4], { mind: 50 }, {}],
+    ['ettercap', 'Ettercap', 'p', 'bug', 34, 24, [1.2, 1.1, 1.2, 0.9], '#7a6a4a', '#3a2a1a', '#ff6a3a', 'spi,web', ['poison', 0.4], { poison: 60 }, {}],
+    ['centipede', 'Giant Centipede', 'p', 'bug', 42, 14, [1.0, 1.1, 1.0, 1.1], '#b8402a', '#6a1a1a', '#ffe14a', 'cent', ['poison', 0.4], { poison: 50 }, {}],
+    ['ankheg', 'Ankheg', 'p', 'bug', 40, 22, [1.6, 1.3, 1.5, 0.9], '#9a7a3a', '#5a3a1a', '#ffe14a', 'beetle,mandible', ['poison', 0.4], { poison: 40 }, {}],
+    ['worg', 'Worg', 'f', 'quad', 44, 28, [1.2, 1.1, 1.1, 1.0], '#5a5048', '#2a2420', '#ffd24a', 'fangs,ears,tail', null, {}, {}],
+    ['direwolf', 'Dire Wolf', 'f', 'quad', 50, 30, [1.5, 1.3, 1.4, 1.0], '#8a8a8a', '#4a4a4a', '#ffd24a', 'fangs,ears,tail,mane', null, { ice: 40 }, {}],
+    ['hellhound', 'Hell Hound', 'f', 'quad', 46, 28, [1.2, 1.3, 1.5, 1.1], '#4a1a1a', '#ff6a2a', '#ffb040', 'fangs,ears,tail,flame', ['fire', 0.6], { fire: 90, ice: -25 }, {}],
+    ['displacer', 'Displacer Beast', 'f', 'quad', 48, 28, [1.4, 1.3, 1.5, 1.0], '#2a2a4a', '#5a5a9a', '#9ad0ff', 'ears,tail,tentacles,fangs', null, { mind: 30 }, {}],
+    ['harpy2', 'Siren Harpy', 'y', 'fly', 30, 30, [1.0, 1.0, 1.1, 1.0], '#d0a080', '#7a5a3a', '#ffe14a', 'wings:bird,hair,talons', ['mind', 0.4], { mind: 30 }, {}],
+    ['griffon', 'Griffon', 'y', 'fly', 46, 34, [1.8, 1.4, 1.6, 1.0], '#c8a050', '#f0e0b0', '#ffd24a', 'wings:bird,beak,tail,legs', null, {}, {}],
+    ['cockatrice', 'Cockatrice', 'y', 'fly', 28, 28, [1.0, 1.0, 1.4, 1.0], '#6a9a5a', '#d04a3a', '#ffe14a', 'wings:bird,beak,comb,tail', ['mind', 0.4], { mind: 50, poison: 40 }, {}],
+    ['peryton', 'Peryton', 'y', 'fly', 40, 30, [1.3, 1.3, 1.4, 1.0], '#7a4a3a', '#2a1a1a', '#ff4a4a', 'wings:bird,horn,beak,tail', null, {}, {}],
+    ['hillgiant', 'Hill Giant', 'z', 'hum', 52, 78, [2.2, 1.5, 2.0, 0.8], '#c8a078', '#6a4a2a', '#ffd24a', 'club,belly', null, {}, { hs: 0.9, k: 1.3 }],
+    ['owlbear', 'Owlbear', 'z', 'hum', 46, 60, [1.8, 1.5, 1.8, 0.9], '#8a6a4a', '#d0c0a0', '#ffd24a', 'beak,fur,claws,ears', null, {}, { hs: 1.1, k: 1.4 }],
+    ['ettin', 'Ettin', 'z', 'hum', 50, 70, [2.2, 1.6, 2.0, 0.8], '#9a7a5a', '#4a3a2a', '#ffd24a', 'twohead,club,tusk', null, {}, { hs: 0.85, k: 1.3 }],
+    ['wight', 'Wight', 'q', 'hum', 24, 44, [1.0, 1.2, 1.4, 1.0], '#7a8a9a', '#2a2a3a', '#7fffd0', 'helm,sword,cape', ['mind', 0.4], { mind: 50, poison: 60, ice: 40 }, {}],
+    ['ghast', 'Ghast', 'q', 'hum', 26, 40, [1.2, 1.2, 1.2, 1.2], '#8a9a7a', '#3a3a2a', '#d8e060', 'claws,fangs,stench', ['poison', 0.4], { poison: 70, mind: 30 }, {}],
+    ['fleshgolem', 'Flesh Golem', 'q', 'hum', 36, 56, [2.0, 1.5, 1.7, 0.8], '#a08a7a', '#5a3a3a', '#ffe14a', 'stitches,bolts', null, { poison: 80, mind: 80 }, { k: 1.25 }],
+    ['crawlclaw', 'Crawling Claw', 'q', 'bug', 22, 14, [0.6, 1.0, 0.9, 1.4], '#c8b090', '#8a6a4a', '#ff4a4a', 'hand', null, { poison: 60, mind: 60 }, {}],
+    ['pseudo', 'Pseudodragon', 'u', 'fly', 30, 22, [0.8, 1.0, 1.1, 1.1], '#b84a4a', '#f0b080', '#ffe14a', 'wings:bat,horn,tail,stinger', ['fire', 0.5], { fire: 40 }, {}],
+    ['faeriedr', 'Faerie Dragon', 'u', 'fly', 30, 22, [0.8, 1.0, 1.2, 1.2], '#5ad0c0', '#c090ff', '#ffffff', 'wings:insect,horn,tail', ['mind', 0.5], { mind: 40 }, {}],
+    ['wyvern', 'Wyvern', 'u', 'fly', 50, 36, [1.8, 1.5, 1.7, 1.0], '#6a7a4a', '#3a4a2a', '#ffe14a', 'wings:bat,tail,stinger,horn', ['poison', 0.5], { poison: 50 }, {}],
+    ['gelcube', 'Gelatinous Cube', 'a', 'blob', 34, 34, [1.8, 1.2, 1.5, 0.7], '#7ad0a0', '#3a8a6a', '#e8e0d0', 'cube,incl', ['poison', 0.3], { poison: 60, fire: -20 }, {}],
+    ['ochrejelly', 'Ochre Jelly', 'a', 'blob', 40, 26, [1.5, 1.3, 1.5, 0.8], '#c8a038', '#8a6a1a', '#ffe14a', 'eyes', ['poison', 0.5], { poison: 70, bolt: 30 }, {}],
+    ['pudding', 'Black Pudding', 'a', 'blob', 44, 28, [2.0, 1.4, 1.8, 0.7], '#2a2a32', '#6a6a7a', '#ff4a4a', 'eyes,bubbles', ['poison', 0.5], { poison: 80, fire: 20, ice: 30 }, {}],
+    ['greyooze', 'Grey Ooze', 'a', 'blob', 36, 20, [1.2, 1.1, 1.1, 0.8], '#8a9098', '#5a6068', '#d8e0e8', 'bubbles', ['poison', 0.4], { poison: 70, fire: 30 }, {}],
+    ['deathdog', 'Death Dog', 'h', 'quad', 44, 30, [1.2, 1.2, 1.3, 1.1], '#4a3a30', '#8a2a2a', '#ff4a4a', 'twohead,fangs,ears,tail', ['poison', 0.3], { poison: 30 }, {}],
+    ['blinkdog', 'Blink Dog', 'h', 'quad', 42, 30, [1.0, 1.1, 1.3, 1.2], '#7a8ad0', '#e0e8ff', '#ffffff', 'ears,tail,sparkle', ['bolt', 0.3], { bolt: 40 }, {}],
+    ['panther', 'Shadow Panther', 'h', 'quad', 46, 28, [1.3, 1.3, 1.3, 1.2], '#2a2a38', '#6a6a9a', '#ffe14a', 'ears,tail,fangs', null, { mind: 30 }, {}],
+    ['lion', 'Cave Lion', 'h', 'quad', 48, 32, [1.5, 1.3, 1.4, 1.0], '#d0a050', '#8a5a1a', '#ffe14a', 'mane,ears,tail,fangs', null, {}, {}],
+    ['wasp', 'Giant Wasp', 'j', 'fly', 28, 20, [1.0, 1.2, 1.2, 1.1], '#e0c030', '#2a2a1a', '#ff4a3a', 'wings:insect,stinger,stripes', ['poison', 0.5], {}, {}],
+    ['dragonfly', 'Giant Dragonfly', 'j', 'fly', 34, 16, [0.9, 1.0, 1.1, 1.3], '#3ac0b0', '#2a6a9a', '#ffe14a', 'wings:insect,tail,stripes', null, {}, {}],
+    ['firebeetle', 'Fire Beetle', 'j', 'fly', 26, 20, [1.1, 1.1, 1.2, 0.9], '#4a2a2a', '#ff7a2a', '#ffb040', 'wings:beetle,glow', ['fire', 0.5], { fire: 70, ice: -25 }, {}],
+    ['rustmon', 'Rust Monster', 'k', 'quad', 40, 26, [1.2, 1.1, 1.3, 1.0], '#a06a3a', '#6a3a1a', '#ffe14a', 'antenna,tailfan,tail', null, {}, {}],
+    ['umberhulk', 'Umber Hulk', 'k', 'hum', 40, 44, [2.0, 1.5, 1.8, 0.9], '#6a5a48', '#3a2a1a', '#ffe14a', 'mandible,claws,foureyes', null, { poison: 30, mind: 30 }, { hs: 1.2, k: 1.3 }],
+    ['giantcrab', 'Giant Crab', 'k', 'bug', 44, 24, [1.6, 1.3, 1.4, 0.9], '#c0503a', '#8a2a1a', '#ffe14a', 'crab', null, { fire: -20 }, {}],
+    ['lizard', 'Giant Lizard', 'k', 'quad', 48, 22, [1.3, 1.2, 1.2, 1.0], '#6a8a3a', '#3a5a1a', '#ffe14a', 'longtail,snout,spikes', null, { poison: 30 }, {}],
+    ['yuanti', 'Yuan-ti Abomination', 'l', 'ser', 32, 56, [1.3, 1.2, 1.4, 1.0], '#4a9a5a', '#d0c070', '#ffe14a', 'torso,hood', ['poison', 0.6], { poison: 80, ice: -25 }, {}],
+    ['naga', 'Spirit Naga', 'l', 'ser', 34, 52, [1.4, 1.2, 1.5, 1.0], '#6a4a9a', '#d0a0ff', '#ffe14a', 'torso,hair', ['mind', 0.5], { mind: 60, poison: 60 }, {}],
+    ['lamia', 'Lamia', 'l', 'ser', 34, 52, [1.3, 1.2, 1.4, 1.0], '#c0a070', '#7a3a6a', '#ffe14a', 'torso,hair', ['mind', 0.5], { mind: 40 }, {}],
+    ['basilisk', 'Basilisk', 'l', 'quad', 44, 24, [1.5, 1.2, 1.5, 0.8], '#6a7a4a', '#c0b040', '#7fffd0', 'longtail,snout,spikes', ['mind', 0.4], { mind: 50, poison: 60 }, {}],
+    ['stonegolem', 'Stone Golem', 'm', 'hum', 38, 58, [1.9, 1.4, 1.6, 0.8], '#8a8a82', '#5a5a55', '#ffa040', 'golem,rune', null, { poison: 80, mind: 80, fire: 30, ice: 30 }, { hs: 0.9, k: 1.35 }],
+    ['claygolem', 'Clay Golem', 'm', 'hum', 36, 56, [1.7, 1.4, 1.5, 0.9], '#b0704a', '#7a4a2a', '#ffe080', 'golem,rune', null, { poison: 80, mind: 80 }, { hs: 0.9, k: 1.3 }],
+    ['helmedh', 'Helmed Horror', 'm', 'hum', 28, 50, [1.4, 1.5, 1.5, 1.2], '#7a8aa0', '#3a4a62', '#7fd8ff', 'armor,helm,sword,empty', null, { poison: 80, mind: 80 }, { k: 1.1 }],
+    ['vampspawn', 'Vampire Spawn', 'n', 'hum', 26, 46, [1.2, 1.3, 1.4, 1.1], '#c8c0c8', '#4a1a2a', '#ff3a3a', 'cape,fangs,hair', ['mind', 0.3], { mind: 40, poison: 40 }, {}],
+    ['mimic', 'Mimic', 'n', 'blob', 32, 28, [1.6, 1.4, 1.6, 0.9], '#8a5a2a', '#c0a040', '#e03a5a', 'chest', null, { poison: 40 }, {}],
+    ['mouther', 'Gibbering Mouther', 'n', 'blob', 34, 26, [1.3, 1.1, 1.4, 0.8], '#b08a98', '#7a4a5a', '#ffe14a', 'mouths,eyes', ['mind', 0.5], { mind: 40 }, {}],
+    ['dretch', 'Dretch', 'n', 'hum', 24, 34, [1.1, 1.0, 1.2, 1.0], '#b0a090', '#6a5a4a', '#ff4a4a', 'fangs,claws,belly', ['poison', 0.3], { fire: 30, poison: 50 }, { hs: 1.3, k: 1.1 }],
+    ['drow', 'Drow Archer', 'o', 'hum', 24, 44, [0.9, 1.1, 1.3, 1.0], '#5a4a6a', '#1a1a2a', '#e8e8ff', 'ears,bow,hair,cape', null, { mind: 30 }, {}],
+    ['lizardfolk', 'Lizardfolk', 'o', 'hum', 26, 42, [1.2, 1.0, 1.1, 1.0], '#5a8a4a', '#8a6a3a', '#ffe14a', 'snout,tail,spear', null, {}, {}],
+    ['kuotoa', 'Kuo-toa', 'o', 'hum', 26, 40, [1.1, 1.0, 1.1, 1.0], '#6a8a9a', '#3a5a6a', '#ffe14a', 'fishhead,tail,spear', null, { bolt: -25 }, {}],
+    ['sahuagin', 'Sahuagin', 'o', 'hum', 28, 44, [1.2, 1.2, 1.3, 1.1], '#3a7a6a', '#9ad0c0', '#ff4a4a', 'fins,fangs,spear,tail', null, { ice: 20 }, {}],
+    ['floateye', 'Floating Eye', 'x', 'eye', 26, 26, [1.0, 1.0, 1.2, 0.9], '#6a4a8a', '#e8e8f0', '#ff3a6a', 'bigeye', ['mind', 0.6], { mind: 60 }, {}],
+    ['willowisp', 'Will-o-Wisp', 'x', 'eye', 20, 20, [0.7, 1.0, 1.4, 1.3], '#9affd0', '#40ffa0', '#ffffff', 'wisp', ['bolt', 0.6], { bolt: 80, fire: 40, mind: 40 }, {}],
+    ['gasspore', 'Gas Spore', 'x', 'eye', 28, 28, [0.9, 0.9, 1.0, 0.7], '#9a8a5a', '#d0c080', '#ff6a3a', 'spore', ['poison', 0.7], { poison: 90, fire: -40 }, {}],
+    ['spectator', 'Spectator', 'x', 'eye', 30, 28, [1.2, 1.1, 1.5, 0.9], '#5a8aa0', '#d0e8f0', '#ffdd55', 'bigeye,stalks', ['bolt', 0.5], { bolt: 50, mind: 30 }, {}]
+  ];
+  let i = 0;
+  for (const r of L) {
+    const [id, nm, b, plan, w, h, m, A, B, C, f, el, res, x] = r, key = String.fromCharCode(0x100 + i++), B0 = EDEF[b];
+    EDEF[key] = { t: id, w, h, hp: Math.round(B0.hp * m[0]), atk: Math.round(B0.atk * m[1] * 10) / 10, xp: Math.round(B0.xp * m[2]), spd: Math.round(B0.spd * m[3]) };
+    ENM[id] = nm; ETYPE[id] = key; BEH[id] = B0.t;
+    GEN[id] = Object.assign({ n: nm, p: plan, c: A, c2: B, c3: C, f, k: 1, hs: 1 }, x || {});
+    if (el) ENEL[id] = el;
+    ENRES[id] = Object.assign({}, res);
+    const pb = PETD[B0.t];
+    PETD[id] = { n: nm, fly: pb.fly, atk: Math.round(pb.atk * m[1] * 100) / 100, ab: pb.ab };
+    if (FLYCH.indexOf(b) >= 0) FLYCH += key;
+    if (FLY.indexOf(B0.t) >= 0) FLY.push(id);
+    (POOL[b] = POOL[b] || []).push(key);
+  }
+})();
 function elOfKind(k) {
   k = String(k || '');
   if (/fire|flame|ember|cinder|lava|burn|pyre|magma|sun/.test(k)) return 'fire';
@@ -1822,16 +1972,40 @@ const ELKW = { ice: /frost|glac|ice|rime|winter|yeti|frozen|boreal|tide|snow/i, 
 function elemsByName(n) { return ELS.filter(e => ELKW[e].test(n || '')); }
 
 const SK = {
-  sword: [{ n: 'Crescent Wave', cost: 6, cd: 1.1, d: 'Hurl a piercing wave of steel' }, { n: 'Whirlwind', cost: 10, cd: 3, d: 'Spin and slash everything near' }, { n: 'Dash Strike', cost: 12, cd: 4, d: 'Lunge through foes, untouchable' }],
-  bow: [{ n: 'Power Shot', cost: 6, cd: 0.9, d: 'Heavy arrow pierces 3 foes' }, { n: 'Arrow Volley', cost: 10, cd: 3, d: 'Fan of 5 arrows' }, { n: 'Explosive Arrow', cost: 14, cd: 5, d: 'Detonates on impact' }],
-  darts: [{ n: 'Triple Throw', cost: 6, cd: 0.9, d: 'Three darts in a spread' }, { n: 'Boomerang Blade', cost: 9, cd: 2.5, d: 'Cuts out and back again' }, { n: 'Blade Storm', cost: 16, cd: 6, d: 'Ring of 10 whirling blades' }],
-  bolt: [{ n: 'Chain Lightning', cost: 14, cd: 1, d: 'Arcs between 3 foes' }, { n: 'Thunderfall', cost: 20, cd: 4, d: 'Sky bolt with a blast' }, { n: 'Storm Nova', cost: 30, cd: 8, d: 'Lightning on all nearby foes' }]
+  sword: [{ n: 'Crescent Wave', cost: 6, cd: 1.1, d: 'Hurl a piercing wave of steel' }, { n: 'Whirlwind', cost: 10, cd: 3, d: 'Spin and slash everything near' }, { n: 'Dash Strike', cost: 12, cd: 4, d: 'Lunge through foes, untouchable' },
+    { n: 'Shield Bash', cost: 8, cd: 3, an: 0, d: 'Smash the foe ahead and stun it' }, { n: 'Rising Slash', cost: 9, cd: 3.5, an: 0, d: 'Uppercut that launches you up' }, { n: 'Battle Cry', cost: 14, cd: 14, an: 0, d: '+35% attack for 8s and heal 12%' },
+    { n: 'Ground Slam', cost: 15, cd: 6, an: 0, d: 'Shockwave that stuns all nearby' }, { n: 'Blade Barrage', cost: 16, cd: 5, an: 0, d: 'Three piercing waves at once' }, { n: 'Parry Stance', cost: 12, cd: 10, an: 0, d: 'Invulnerable for 1.6s, heal 8%' }, { n: 'Execution', cost: 22, cd: 9, an: 2, d: 'A devastating dash, triple damage' }],
+  bow: [{ n: 'Power Shot', cost: 6, cd: 0.9, d: 'Heavy arrow pierces 3 foes' }, { n: 'Arrow Volley', cost: 10, cd: 3, d: 'Fan of 5 arrows' }, { n: 'Explosive Arrow', cost: 14, cd: 5, d: 'Detonates on impact' },
+    { n: 'Piercing Rain', cost: 12, cd: 4, an: 0, d: 'Arrows fall from the sky ahead' }, { n: 'Frost Trap', cost: 9, cd: 5, an: 0, d: 'Slows and hurts foes ahead' }, { n: 'Quick Draw', cost: 7, cd: 1.6, an: 0, d: 'Three fast arrows' },
+    { n: 'Snipe', cost: 18, cd: 7, an: 0, d: 'One huge arrow, quadruple damage' }, { n: 'Rapid Fire', cost: 14, cd: 5, an: 0, d: 'Eight arrows in a tight stream' }, { n: 'Backflip Shot', cost: 10, cd: 5, an: 0, d: 'Dodge back and fire, brief invulnerability' }, { n: 'Hail of Arrows', cost: 26, cd: 10, an: 0, d: 'Twenty arrows carpet the area' }],
+  darts: [{ n: 'Triple Throw', cost: 6, cd: 0.9, d: 'Three darts in a spread' }, { n: 'Boomerang Blade', cost: 9, cd: 2.5, d: 'Cuts out and back again' }, { n: 'Blade Storm', cost: 16, cd: 6, d: 'Ring of 10 whirling blades' },
+    { n: 'Piercing Dart', cost: 7, cd: 1.5, an: 0, d: 'A fast dart through three foes' }, { n: 'Caltrops', cost: 9, cd: 3.5, an: 0, d: 'Scatter arcing blades ahead' }, { n: 'Smoke Bomb', cost: 12, cd: 9, an: 0, d: 'Stun and confuse nearby foes, vanish' },
+    { n: 'Fan of Knives', cost: 11, cd: 3.5, an: 0, d: 'Seven blades in a wide fan' }, { n: 'Ricochet', cost: 12, cd: 4.5, an: 0, d: 'Two boomerangs at different heights' }, { n: 'Great Chakram', cost: 15, cd: 6, an: 0, d: 'Huge slow chakram, double damage' }, { n: 'Blade Dance', cost: 22, cd: 9, an: 0, d: 'Spin with 16 blades, brief invulnerability' }],
+  bolt: [{ n: 'Chain Lightning', cost: 14, cd: 1, d: 'Arcs between 3 foes' }, { n: 'Thunderfall', cost: 20, cd: 4, d: 'Sky bolt with a blast' }, { n: 'Storm Nova', cost: 30, cd: 8, d: 'Lightning on all nearby foes' },
+    { n: 'Spark Shot', cost: 6, cd: 0.8, an: 0, d: 'A cheap bolt at the nearest foe' }, { n: 'Static Field', cost: 14, cd: 5, an: 0, d: 'Shock burst that slows foes' }, { n: 'Lightning Lance', cost: 16, cd: 4, an: 0, d: 'A long beam through everything ahead' },
+    { n: 'Arc Barrage', cost: 18, cd: 4, an: 0, d: 'Four bolts at four different foes' }, { n: 'Skyfall', cost: 24, cd: 7, an: 0, d: 'Four strikes rain down ahead' }, { n: 'Mana Surge', cost: 0, cd: 20, an: 0, d: 'Restore 40% mana, +25% speed 6s' }, { n: 'Tempest', cost: 36, cd: 12, an: 0, d: 'Seven bolts blast the whole area' }]
 };
 const SKG = { sword: 'swd', bow: 'bow', darts: 'drt', bolt: 'lit' };
 const SKN = { sword: 'Sword', bow: 'Bow', darts: 'Darts', bolt: 'Lightning' };
 const SKORD = ['sword', 'bow', 'darts', 'bolt'];
 const SKDELAY = { sword0: 0.2, sword1: 0.05, sword2: 0.06, bow0: 0.3, bow1: 0.33, bow2: 0.36, darts0: 0.17, darts1: 0.24, darts2: 0.3, bolt0: 0.14, bolt1: 0.3, bolt2: 0.26 };
 const SKREQ = { sword: [2, 5, 8], bow: [3, 7, 11], darts: [3, 7, 11], bolt: [4, 9, 14] };
+/* ===== skill trees: skill points (1 per level, +2 every 5th) spent on actives and passives ===== */
+const TRG = [0, 4, 10, 18];
+function mkTree(px, k, ps) {
+  const o = [];
+  [[0, 1, 2], [3, 4], [5, 6], [7, 8, 9]].forEach((arr, t) => { for (const i of arr) o.push({ id: px + '_a' + i, n: SK[k][i].n, a: i, max: 5, t }); const q = ps[t]; o.push({ id: px + '_p' + q[0], n: q[1], max: q[2], t, fx: q[3] }); });
+  return o;
+}
+const TREE = {
+  sword: mkTree('sw', 'sword', [[1, 'Keen Edge', 5, { crit: 2 }], [3, 'Blade Mastery', 5, { swd: 7 }], [2, 'Iron Stance', 5, { def: 2, blk: 1.5 }], [5, 'Warlord', 3, { atk: 4, life: 1 }]]),
+  bow: mkTree('bw', 'bow', [[1, 'Eagle Eye', 5, { crit: 2 }], [3, 'Quiver Mastery', 5, { bow: 7 }], [4, 'Fleet Foot', 5, { spd: 4, ias: 2 }], [5, 'Deadeye', 3, { crit: 3, atk: 2, cdd: 8 }]]),
+  darts: mkTree('dt', 'darts', [[1, 'Nimble Fingers', 5, { ias: 4 }], [3, 'Blade Mastery', 5, { drt: 7 }], [4, 'Evasion', 5, { spd: 3, def: 1 }], [6, 'Assassin', 3, { crit: 3, cdd: 8, cdr: 2 }]]),
+  bolt: mkTree('bt', 'bolt', [[1, 'Arcane Focus', 5, { mpr: 3 }], [3, 'Storm Mastery', 5, { lit: 7 }], [2, 'Mana Well', 5, { mp: 8, regen: 0.3 }], [6, 'Overcharge', 3, { cdr: 3, eL: 4 }]])
+};
+const TRNAME = { sword: 'Sword', bow: 'Bow', darts: 'Darts', bolt: 'Staff' };
+const TRTIER = ['Tier I', 'Tier II — needs 4 points in this tree', 'Tier III — needs 10 points in this tree', 'Tier IV — needs 18 points in this tree'];
+function spTotal(L) { const n = Math.max(0, L - 1); return n + 2 * Math.floor(n / 5); }
 const SKMAX = 5;
 const SKGEAR = {
   sword: [{ t: 'an Uncommon+ sword or greatsword', f: e => e.weapon && e.weapon.r >= 1 && ['sword', 'greatsword'].indexOf(e.weapon.wt) >= 0 },
@@ -2458,6 +2632,143 @@ function mk(id, name, w, h, theme, mx, my, tier) {
   return R;
 }
 
+/* ===== Scene director: per-room set pieces, hazards, props, shrines, arenas, decor ===== */
+const DECO = {
+  gothic: ['pillar', 'banner', 'statue', 'window', 'brazier', 'chain'], crypt: ['coffin', 'skulls', 'chain', 'pillar', 'web', 'brazier'],
+  library: ['shelf', 'lantern', 'pillar', 'banner', 'shelf', 'window'], tower: ['window', 'banner', 'pillar', 'lantern', 'chain', 'statue'],
+  yokai: ['lantern', 'torii', 'banner', 'statue', 'mist', 'lantern'], frost: ['deadtree', 'icicle', 'stoneman', 'deadtree'],
+  ice: ['crystal', 'icicle', 'crystal', 'stoneman'], drake: ['brazier', 'bones', 'pillar', 'chain', 'crystal'],
+  desert: ['obelisk', 'palm', 'pot', 'rock'], tomb: ['obelisk', 'sarcoph', 'brazier', 'hiero', 'pillar', 'statue'],
+  wall: ['banner', 'lantern', 'pillar', 'brazier'], pit: ['bones', 'chain', 'brazier', 'rock'],
+  palace: ['pillar', 'banner', 'lantern', 'statue', 'brazier'], sanctum: ['pillar', 'banner', 'statue', 'window', 'brazier']
+};
+const LORE = {
+  gothic: ['"The bells tolled for a saint who never woke. We kept ringing anyway."', '"Do not drink from the font. It remembers every sinner."', '"Seven keys, seven doors. The eighth is behind your eyes."'],
+  crypt: ['"Here lie the ones who asked too many questions of the dark."', '"The dead are patient. They have nothing but time."', '"Count the coffins. One more than yesterday."'],
+  library: ['"Page 212 is missing. So is the monk who wrote it."', '"Knowledge is a flame. Mind your sleeves."', '"The index lists a chapter on you."'],
+  tower: ['"The stars here are closer. They are listening."', '"Climb until the stairs forget you."', '"The astronomer never came down."'],
+  yokai: ['"Lanterns on the water: each one a name nobody says."', '"The fox keeps its promises. Only the ones you did not make."', '"Bow to the gate, or the gate bows to you."'],
+  frost: ['"The cold is not cruel. It is simply honest."', '"Follow the wolves. Or do not, and be followed."', '"Snow keeps secrets better than stone."'],
+  ice: ['"Something sleeps in the blue. Do not warm it."', '"Every icicle counts a tear."', '"The glacier moves one inch a year. It is almost here."'],
+  drake: ['"The mountain breathes. Do not be the thing it breathes on."', '"Gold is only fire that has learned to wait."', '"Wyrm-scale: strong against steel, weak against patience."'],
+  desert: ['"Walk by night. The sun is a creditor."', '"The dunes remember the roads. Roads forget the dunes."', '"Water is the only true currency."'],
+  tomb: ['"Death is a door. Pharaohs only built it bigger."', '"The scarabs are counting. Do not interrupt."', '"Take nothing. Leave nothing. Leave quickly."'],
+  wall: ['"Ten thousand li of stone, and not one gate for the weary."', '"The emperor feared the north. The north feared the wall."', '"Each brick is a man. Count gently."'],
+  pit: ['"Down here the torches burn backwards."', '"The deeper you dig, the older the mistakes."', '"Listen. The pit has a heartbeat."'],
+  palace: ['"The throne is warm. Someone was just here."', '"Gold leaf on the walls. Blood leaf on the floors."', '"The court bows to no one now."'],
+  sanctum: ['"Prayer is a wound that will not close."', '"The saint wept until the walls remembered."', '"Light the altar. Mercy is a short fuse."']
+};
+const SHRINES = [
+  { n: 'Shrine of Might', col: '#ff9a5a', msg: 'Shrine of Might: +30% attack for 2 minutes.' },
+  { n: 'Shrine of Swiftness', col: '#9ad0b5', msg: 'Shrine of Swiftness: +25% speed for 2 minutes.' },
+  { n: 'Shrine of Vigor', col: '#e8808a', msg: 'Shrine of Vigor: fully healed, mana restored.' },
+  { n: 'Shrine of Fortune', col: '#ffd166', msg: 'Shrine of Fortune: a purse of gold!' }
+];
+function decorateRoom(R) {
+  const g = R.base, w = R.w, h = R.h; let sd = (hashU(R.id + 'sd') >>> 0) || 1;
+  const rnd = () => { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; return sd / 4294967296; };
+  R.props = []; R.mp = []; R.vents = []; R.rocks = []; R.pend = []; R.shr = []; R.deco = []; R.arena = null;
+  let boss = false, slope = false;
+  for (const row of g) for (const ch of row) { if ('XMNRPQTYG'.indexOf(ch) >= 0) boss = true; if (ch === '/' || ch === '\\') slope = true; }
+  const SOL = '#=/\\Br|~';
+  const fr = c => { for (let r = 4; r < h; r++) { const t = g[r][c]; if (t === '#' || t === '/' || t === '\\') return r; } return h; };
+  const col = []; for (let c = 0; c < w; c++) col.push(fr(c));
+  const busy = new Array(w).fill(false);
+  for (let c = 0; c < w; c++) for (let r = 0; r < h; r++) if ('123456789SKWHCADZrB'.indexOf(g[r][c]) >= 0) { const rr = ('SrB'.indexOf(g[r][c]) >= 0 || '123456789'.indexOf(g[r][c]) >= 0) ? 2 : 1; for (let d = -rr; d <= rr; d++) if (c + d >= 0 && c + d < w) busy[c + d] = true; }
+  const clear = c => { const f = col[c]; if (f >= h - 1 || f < 7) return false; for (let r = f - 3; r < f; r++) if (r >= 2 && SOL.indexOf(g[r][c]) >= 0) return false; return true; };
+  const spans = [];
+  for (let c = 2; c < w - 2; c++) {
+    if (busy[c] || !clear(c)) continue;
+    const c0 = c; while (c + 1 < w - 2 && !busy[c + 1] && col[c + 1] === col[c0] && clear(c + 1)) c++;
+    if (c - c0 + 1 >= 5) spans.push({ c0, c1: c, fr: col[c0] });
+  }
+  const free = (c, r) => r >= 2 && r < h && g[r][c] === '.';
+  const used = new Array(w).fill(false);
+  const mark = (a, b) => { for (let c = a; c <= b; c++) if (c >= 0 && c < w) used[c] = true; };
+  // pits: crumbling bridges and moving platforms
+  const pits = []; for (let c = 2; c < w - 2; c++) if (col[c] >= h - 1) { const a = c; while (c + 1 < w - 2 && col[c + 1] >= h - 1) c++; pits.push([a, c]); }
+  for (const [a, b] of pits) {
+    const pw = b - a + 1; if (pw < 3 || a < 3 || b > w - 4) continue;
+    if (g[h - 2][a - 1] !== '#' || g[h - 2][b + 1] !== '#') continue;
+    let ok = true; for (let c = a; c <= b; c++) if (g[h - 2][c] !== '.' || g[h - 1][c] !== '.') ok = false;
+    if (!ok) continue;
+    if (pw >= 5) R.mp.push({ x0: a + pw / 2 - 1, y0: h - 2.2, w: 2, ax: 'x', range: (pw - 2) * T / 2 + 10, sp: 1.15, ph: rnd() * 6 });
+    else for (let c = a; c <= b; c++) g[h - 2][c] = '~';
+    mark(a - 1, b + 1);
+  }
+  const roomEnemies = () => { const s = new Set(); for (const row of g) for (const ch of row) if ('esvpfzquahjklmno'.indexOf(ch) >= 0) s.add(ch); return s.size ? Array.from(s) : ['e', 's']; };
+  const putProps = (c0, c1, f, dens) => {
+    for (let cc = c0 + 1; cc < c1; cc += 2 + Math.floor(rnd() * 3)) {
+      if (rnd() > dens || !free(cc, f - 1) || busy[cc]) continue;
+      const st = ['urn', 'barrel', 'crate', 'urn', 'barrel', 'skull'][Math.floor(rnd() * 6)];
+      R.props.push({ c: cc, r: f - 1, style: st });
+    }
+  };
+  let nEnemy = 0; for (const row of g) for (const ch of row) if ('esvpfzquahjklmnobwyg'.indexOf(ch) >= 0) nEnemy++;
+  let arenaDone = boss || w < 48 || R.id === 'gate' || slope;
+  const sorted = spans.slice().sort((a, b) => (b.c1 - b.c0) - (a.c1 - a.c0));
+  for (const s of sorted) {
+    const len = s.c1 - s.c0 + 1;
+    if (!arenaDone && len >= 16 && R.tier >= 0) {
+      arenaDone = true;
+      const ce = roomEnemies(), ws = R.tier >= 2 ? 3 : 2, waves = [];
+      for (let k = 0; k < ws; k++) { const wv = []; for (let j = 0; j < 2 + k + (R.tier >= 2 ? 1 : 0); j++) wv.push(ce[Math.floor(rnd() * ce.length)]); waves.push(wv); }
+      R.arena = { c0: s.c0, c1: s.c1, fr: s.fr, waves };
+      R.deco.push({ c: s.c0 + 1, r: s.fr, k: 'brazier', s: 1, o: 1, fixed: true }, { c: s.c1 - 1, r: s.fr, k: 'brazier', s: 1, o: 2, fixed: true });
+      mark(s.c0, s.c1); s.arena = true; continue;
+    }
+  }
+  for (const s of spans) {
+    if (s.arena) continue;
+    const len = s.c1 - s.c0 + 1, f = s.fr;
+    if (!boss && R.id !== 'gate' && rnd() < 1.0) {
+      const pool = [];
+      if (len >= 8 && f >= 9) pool.push('gallery');
+      if (len >= 5) pool.push('vents', 'rocks', 'vents');
+      if (len >= 6 && f >= 8) pool.push('pend', 'pend');
+      if (len >= 6 && nEnemy < 14) pool.push('camp', 'camp');
+      const k = pool.length ? pool[Math.floor(rnd() * pool.length)] : null;
+      if (k === 'gallery') {
+        const gl = Math.min(len - 4, 12), pr = f - 4; let gc = -1;
+        for (let tr = 0; tr < 8 && gc < 0; tr++) { const t0 = s.c0 + 2 + Math.floor(rnd() * Math.max(1, len - gl - 3)); let ok2 = true; for (let c = t0 - 2; c < t0 + gl + 2 && ok2; c++) for (let r = f - 4; r < f; r++) if (!free(c, r)) ok2 = false; if (ok2) gc = t0; }
+        if (gc < 0) { putProps(s.c0, s.c1, f, 0.75); continue; }
+        for (let c = gc; c < gc + gl; c++) if (free(c, pr)) g[pr][c] = '=';
+        for (const c of [gc - 2, gc - 1, gc + gl, gc + gl + 1]) if (c > 1 && c < w - 2 && free(c, f - 2) && free(c, f - 1)) g[f - 2][c] = '=';
+        R.props.push({ c: gc + 1, r: pr - 1, style: 'urn' }, { c: gc + gl - 2, r: pr - 1, style: 'crate' });
+        if (rnd() < 0.7) { const kinds = ['$', '+', '?']; R.shr.push({ kind: kinds[Math.floor(rnd() * 3)], c: gc + (gl >> 1), r: pr - 1, tid: Math.floor(rnd() * 4) }); }
+        mark(gc - 2, gc + gl + 1);
+      } else if (k === 'vents') {
+        const n = len >= 12 ? 3 : 2, st = Math.floor((len - 4) / n);
+        for (let i = 0; i < n; i++) R.vents.push({ c: s.c0 + 2 + i * Math.max(4, st), r: f - 1, ph: i * 1.1 });
+        mark(s.c0, s.c1);
+      } else if (k === 'rocks') {
+        for (let i = 0; i < 2; i++) R.rocks.push({ c: s.c0 + 2 + Math.floor((len - 4) * (i + 0.5) / 2), fy: f * T });
+        mark(s.c0, s.c1);
+      } else if (k === 'pend') {
+        R.pend.push({ c: s.c0 + (len >> 1), len: (f - 2) * T - 14, ph: rnd() * 6, sp: 1.3 + rnd() * 0.5 });
+        mark(s.c0, s.c1);
+      } else if (k === 'camp') {
+        const cc = s.c0 + (len >> 1), ce = roomEnemies();
+        R.deco.push({ c: cc, r: f, k: 'bonfire', s: 1, o: 3, fixed: true });
+        for (const d of [-3, 3, 5]) if (free(cc + d, f - 1) && !busy[cc + d]) g[f - 1][cc + d] = ce[Math.floor(rnd() * ce.length)];
+        R.props.push({ c: cc - 1, r: f - 1, style: 'crate' }, { c: cc + 1, r: f - 1, style: 'barrel' });
+        mark(cc - 4, cc + 6);
+      }
+    }
+    putProps(s.c0, s.c1, f, boss ? 0.35 : 0.75);
+  }
+  // one shrine / fountain / lore tablet in rooms that did not get one on a gallery
+  if (!R.shr.length && !boss && rnd() < 0.75 && spans.length) {
+    const s = spans[Math.floor(rnd() * spans.length)], cc = s.c0 + 1 + Math.floor(rnd() * (s.c1 - s.c0 - 1)), kinds = ['$', '+', '?', '?'];
+    if (free(cc, s.fr - 1)) R.shr.push({ kind: kinds[Math.floor(rnd() * 4)], c: cc, r: s.fr - 1, tid: Math.floor(rnd() * 4) });
+  }
+  // background decor
+  const dk = DECO[R.theme] || DECO.gothic;
+  for (let cc = 3; cc < w - 3; cc += 4 + Math.floor(rnd() * 4)) {
+    if (busy[cc] && rnd() < 0.7) continue;
+    R.deco.push({ c: cc, r: Math.min(col[cc], h - 2), k: dk[Math.floor(rnd() * dk.length)], s: 0.85 + rnd() * 0.4, o: Math.floor(rnd() * 100) });
+  }
+}
 function buildRooms() {
   // Entrance Hall: start, altar, chest with boots, shortcut door high on the left
   const G = mk('gate', 'Entrance Hall', 40, 14, 'gothic', 0, 1, 0);
@@ -2701,7 +3012,9 @@ function buildRooms() {
   L.doors = { '1': { to: 'nave', d: '2' }, '2': { to: 'tower', d: '1' } };
   W.doors = { '1': { to: 'library', d: '2' }, '2': { to: 'sanctum', d: '1' } };
   S.doors = { '1': { to: 'tower', d: '2' }, '2': { to: 'vgate', d: '1' } };
-  return { wgate: X1, rampart: X2, beacon: X3, gallery: X4, pit: X5, emperor: X6, gate: G, nave: N, crypt: C, library: L, tower: W, sanctum: S, nurahall: Y, vgate: V1, bridge: V2, river: V3, icecave: V4, glacier: V5, chapel: V6, lair: V7, dunes: D1, ruins: D2, sphinx: D3, pyrgate: D7, tomb1: D4, shaft: D5, throne: D6 };
+  const RR = { wgate: X1, rampart: X2, beacon: X3, gallery: X4, pit: X5, emperor: X6, gate: G, nave: N, crypt: C, library: L, tower: W, sanctum: S, nurahall: Y, vgate: V1, bridge: V2, river: V3, icecave: V4, glacier: V5, chapel: V6, lair: V7, dunes: D1, ruins: D2, sphinx: D3, pyrgate: D7, tomb1: D4, shaft: D5, throne: D6 };
+  for (const k in RR) decorateRoom(RR[k]);
+  return RR;
 }
 
 function doorSpawn(R, ch) {
@@ -3212,9 +3525,16 @@ class Component extends DCLogic {
     this.wrapRef = (el) => { this.wrap = el; };
     this.onKeyDown = (e) => this.kd(e);
     this.onKeyUp = (e) => this.ku(e);
+    this.mh = {};
+    this.onMouseDown = (e) => { if (e.button !== 0 && e.button !== 2) return; e.preventDefault(); AU.init(); const ix = e.button === 0 ? 10 : 11; this.mh[ix] = true; this.hbOpen = null; this.hbRun(ix); this.refocus(); };
+    this.onMouseUp = (e) => { this.mh[e.button === 0 ? 10 : 11] = false; };
+    this.onMouseLeave = () => { this.mh = {}; };
+    this.onCtx = (e) => { e.preventDefault(); };
     this.onBlur = () => { this.keys = {}; };
     this.primary = () => { AU.init(); this.primaryAction(); };
     this.buyPotion = () => this.buyPot();
+    this.buyManaPot = () => this.buyMana();
+    this.drinkMana = () => { this.useMana(); this.refocus(); };
     this.drinkPotion = () => { this.usePotion(); this.refocus(); };
     this.stars = [];
     for (let i = 0; i < 60; i++) this.stars.push({ x: (i * 97 % 160) * 10, y: (i * 53 % 230), s: i % 5 === 0 ? 2 : 1, ph: i * 1.7 });
@@ -3300,6 +3620,7 @@ class Component extends DCLogic {
     }
     const sc = setCounts(h.equip);
     for (const id in sc) { const st = SETS.find(x => x.id === id); if (!st) continue; for (const t in st.b) if (sc[id] >= +t) for (const q in st.b[t]) X[q] += st.b[t][q]; }
+    this.trApply(X);
     const gp = this.g.p; let atk = 6 + 2 * (L - 1) + X.atk, def = 1 + Math.floor((L - 1) * 0.8) + X.def, hp = 50 + 10 * (L - 1) + h.hpUp + X.hp, spd = 165 + (L - 1) + X.spd, crit = 5 + X.crit;
     if (h.rally > 0) atk = Math.round(atk * 1.2);
     const BF = this.g.buf; if (BF) { if (BF.atk && BF.atk.t > 0) atk = Math.round(atk * BF.atk.m); if (BF.spd && BF.spd.t > 0) spd = Math.round(spd * BF.spd.m); }
@@ -3326,14 +3647,15 @@ class Component extends DCLogic {
 
   /* ---------- rooms ---------- */
   spawnAt(cur, ch, x, y, R, plain) {
+    const och = ch; if (!plain && POOL[ch] && Math.random() < 0.62) ch = POOL[ch][Math.floor(Math.random() * POOL[ch].length)];
     const D = EDEF[ch], fly = FLYCH.indexOf(ch) >= 0;
     const cy = this.g.stage - 1, tf = (ch === 'X' || ch === 'M' || ch === 'N' || ch === 'R' || ch === 'P' || ch === 'Q' || ch === 'T' || ch === 'Y' || ch === 'G') ? 0.35 : 1, hs = (1 + 0.3 * R.tier * tf) * (1 + 0.45 * cy), as = (1 + 0.25 * R.tier * tf) * (1 + 0.3 * cy), xs = (1 + 0.3 * R.tier) * (1 + 0.4 * cy);
     const over = Math.max(0, this.g.hero.level - (2 + R.tier * 3)), lh = 1 + 0.07 * over, la = 1 + 0.04 * over;
     let elite = null;
-    if (!plain && 'esvgpbwfyzquahjklmno'.indexOf(ch) >= 0 && Math.random() < Math.min(0.4, 0.1 + 0.05 * R.tier + 0.06 * cy)) elite = ELITE[Math.floor(Math.random() * ELITE.length)];
-    const vi = (!plain && VARCH.indexOf(ch) >= 0) ? pickVar(R.tier) : 0, V = MV[vi], vsc = V.sc;
+    if (!plain && 'esvgpbwfyzquahjklmno'.indexOf(och) >= 0 && Math.random() < Math.min(0.4, 0.1 + 0.05 * R.tier + 0.06 * cy)) elite = ELITE[Math.floor(Math.random() * ELITE.length)];
+    const vi = (!plain && VARCH.indexOf(och) >= 0) ? pickVar(R.tier) : 0, V = MV[vi], vsc = V.sc;
     const sc = (elite ? 1.18 : 1) * vsc, w = Math.round(D.w * sc), hh = Math.round(D.h * sc), em = elite ? 2.6 : 1, hp = D.hp * hs * lh * em * V.hp;
-    cur.enemies.push({ t: D.t, x, y: y - (fly ? 0 : hh), w, h: hh, sc: (elite || vsc !== 1) ? sc : 0, elite, v: vi, vn: vi ? varName(D.t, vi) : null, vt: V.tint || null, dm: V.dm || 0, enel: V.el || null, rs: Object.assign({}, ENRES[D.t] || {}, V.res || {}), shield: elite && elite.k === 'shield' ? hp * 0.5 : 0, mshield: hp * 0.5, ecd: 2 + Math.random() * 2, stun: 0, charm: 0, conf: 0, slow: 0, allyCd: 0, wt: 0, vy: 0, hp, mhp: hp, atk: D.atk * as * la * (elite ? 1.4 : 1) * V.atk, xp: D.xp * xs * lh * (elite ? 3 : 1) * V.xp, spd: D.spd * (elite && elite.k === 'frenzy' ? 1.45 : 1) * V.spd, dir: Math.floor(x / T) % 2 ? 1 : -1, kb: 0, flash: 0, swing: -1, dead: false, ph: (x / 40) % 6, hx: x, hy: y, cd: 2.5, lunge: 0, p2: false, onG: false, lvx: 0, st: 'walk', stT: 0, awake: false, phase: 1, hitDone: false, cd2: 2, edge: false, k: '' });
+    cur.enemies.push({ t: D.t, x, y: y - (fly ? 0 : hh), w, h: hh, sc: (elite || vsc !== 1) ? sc : 0, elite, v: vi, vn: vi ? varName(D.t, vi) : null, vt: V.tint || null, dm: V.dm || 0, enel: V.el || null, rs: Object.assign({}, ENRES[D.t] || {}, V.res || {}), shield: elite && elite.k === 'shield' ? hp * 0.5 : 0, mshield: hp * 0.5, ecd: 2 + Math.random() * 2, stun: 0, charm: 0, conf: 0, slow: 0, allyCd: 0, wt: 0, vy: 0, hp, mhp: hp, atk: D.atk * as * la * (elite ? 1.4 : 1) * V.atk, xp: D.xp * xs * lh * (elite ? 3 : 1) * V.xp, spd: D.spd * (elite && elite.k === 'frenzy' ? 1.45 : 1) * V.spd, dir: Math.floor(x / T) % 2 ? 1 : -1, kb: 0, flash: 0, swing: -1, dead: false, ph: (x / 40) % 6, hx: x, hy: y, cd: 2.5, lunge: 0, p2: false, onG: false, lvx: 0, st: 'walk', stT: 0, awake: (och === 'g' && ch !== 'g'), phase: 1, hitDone: false, cd2: 2, edge: false, k: '' });
   }
 
   loadRoom(id, spawn) {
@@ -3356,7 +3678,7 @@ class Component extends DCLogic {
       }
     }
     if (R.lock && !g.flags[R.lock] && !(R.lock === 'egyptdone' && g.flags.pharaoh && g.flags.witch)) for (let r = 0; r < R.h; r++) for (let c = 0; c < R.w; c++) if (R.base[r][c] === '2') grid[r][c] = '#';
-    this.cur = cur;
+    this.cur = cur; this.buildDirector(cur, R);
     const sp = spawn || doorSpawn(R, '1'), old = g.p;
     if (sp.x < 0 || sp.y < 0 || sp.x > R.w * T) { const q = doorSpawn(R, '1'); sp.x = q.x; sp.y = q.y; }
     g.p = { x: sp.x, y: sp.y, w: 22, h: 34, vx: 0, vy: 0, face: sp.face || (old ? old.face : 1), onGround: false, coyote: 0, jumpBuf: 0, want: 0, atkT: 0, atkCd: 0, as: 'idle', ast: 0, cmb: 0, atkW: 0.1, atkB: 0.06, atkR: 0.3, brake: 0, turnT: 0, lz: 0, landT: 0, wasG: true, swing: 0, inv: 0, air2: false, dropT: 0, shoot: 0, shootCd: 0, castT: 0, skq: 0, skT: 0, pend: null, skCd: old && old.skCd ? old.skCd : {}, skAnim: 0, skKind: '', whirl: 0, dash: 0, dashV: 0, t0: 0, tameCd: 0, poison: old ? old.poison : null };
@@ -3376,7 +3698,7 @@ class Component extends DCLogic {
     if (r >= R.h) return '.';
     return this.cur.grid[r][c];
   }
-  solid(c, r) { const t = this.tile(c, r); return t === '#' || t === 'B' || t === 'r'; }
+  solid(c, r) { const t = this.tile(c, r); return t === '#' || t === 'B' || t === 'r' || t === '|'; }
 
   moveBox(b, dx, dy, drop) {
     const res = { hitX: false, ground: false }, prevBottom = b.y + b.h;
@@ -3397,8 +3719,9 @@ class Component extends DCLogic {
       if (dy > 0) {
         const r = Math.floor((b.y + b.h - 0.01) / T), ca = b.slope ? Math.floor((b.x + b.w / 2) / T) : c0, cb = b.slope ? ca : c1;
         for (let c = ca; c <= cb; c++) {
-          if (this.solid(c, r) || (this.tile(c, r) === '=' && !drop && prevBottom <= r * T + 1)) { b.y = r * T - b.h; b.vy = 0; res.ground = true; break; }
+          if (this.solid(c, r) || (this.ow(c, r) && !drop && prevBottom <= r * T + 1)) { b.y = r * T - b.h; b.vy = 0; res.ground = true; break; }
         }
+        if (!res.ground && !drop && this.cur.mp) for (const m of this.cur.mp) if (b.x + b.w > m.x + 1 && b.x < m.x + m.w - 1 && prevBottom <= m.y + 5 + Math.max(0, m.dy || 0) && b.y + b.h >= m.y) { b.y = m.y - b.h; b.vy = 0; res.ground = true; break; }
       } else {
         const r = Math.floor(b.y / T);
         for (let c = c0; c <= c1; c++) if (this.solid(c, r)) { b.y = (r + 1) * T; b.vy = 0; break; }
@@ -3423,7 +3746,7 @@ class Component extends DCLogic {
     const g = this.g, c = e.code, onBtn = e.target !== e.currentTarget;
     AU.init(); if (c === 'KeyM' && !e.repeat) { const m = AU.toggle(); this.toast(m ? 'Sound off (M)' : 'Sound on (M)', '#d8cbb8'); return; }
     if (onBtn && (c === 'Space' || c === 'Enter')) return;
-    const game = ['KeyA', 'KeyD', 'KeyW', 'KeyS', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyJ', 'KeyX', 'KeyZ', 'KeyQ', 'KeyH', 'KeyK', 'KeyC', 'KeyL', 'KeyV', 'KeyI', 'KeyB', 'KeyE', 'KeyT', 'KeyP', 'Tab', 'Escape', 'Enter'];
+    const game = ['KeyA', 'KeyD', 'KeyW', 'KeyS', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyJ', 'KeyX', 'KeyZ', 'KeyQ', 'KeyH', 'KeyG', 'KeyK', 'KeyC', 'KeyL', 'KeyV', 'KeyI', 'KeyB', 'KeyE', 'KeyT', 'KeyP', 'Tab', 'Escape', 'Enter'];
     if (game.indexOf(c) >= 0) e.preventDefault();
     this.keys[c] = true;
     if (e.repeat) return;
@@ -3438,12 +3761,10 @@ class Component extends DCLogic {
     if (c === 'KeyE') this.cycleSub();
     if (c === 'KeyT') this.tryTame();
     if (c === 'KeyP') this.cyclePet();
-    if (c === 'Digit1') this.pickSub('sword');
-    if (c === 'Digit2') this.pickSub('bow');
-    if (c === 'Digit3') this.pickSub('darts');
-    if (c === 'Digit4') this.pickSub('bolt');
+    if (c.indexOf('Digit') === 0) { const d = +c[5]; this.hbRun(d === 0 ? 9 : d - 1); }
     if (c === 'KeyQ') this.swapWeapon();
     if (c === 'KeyH') this.usePotion();
+    if (c === 'KeyG') this.useMana();
   }
   ku(e) {
     const c = e.code;
@@ -3478,7 +3799,7 @@ class Component extends DCLogic {
       this.ring(p.x + p.w / 2, p.y + p.h / 2, '#9ad0b5'); this.sfx('levelup');
       this.burst(p.x + p.w / 2, p.y + p.h / 2, 24, '#ffd166');
       this.text(p.x + p.w / 2, p.y - 24, 'LEVEL UP!', '#ffd166');
-      this.toast('Level ' + h.level + '! Max HP ' + S.maxHp + ', ATK ' + S.atk + ', DEF ' + S.def, '#9ad0b5');
+      this.toast('Level ' + h.level + '! Max HP ' + S.maxHp + ', ATK ' + S.atk + ', DEF ' + S.def + ' \u00b7 +' + (spTotal(h.level) - spTotal(h.level - 1)) + ' skill point' + (spTotal(h.level) - spTotal(h.level - 1) > 1 ? 's' : ''), '#9ad0b5');
     }
     if (h.level >= MAXLV) h.xp = 0;
   }
@@ -3560,7 +3881,7 @@ class Component extends DCLogic {
   usePotion() {
     const g = this.g, h = g.hero, S = this.stats();
     if (g.mode !== 'play') return;
-    if (h.potions <= 0) { this.toast('No potions. Buy one for ' + POTION + ' gold.', '#e8808a'); this.touch(true); return; }
+    if (h.potions <= 0) { this.toast('No potions. Buy one for ' + this.potCost() + ' gold.', '#e8808a'); this.touch(true); return; }
     if (h.hp >= S.maxHp) { this.toast('Already at full health.', '#d8cbb8'); this.touch(true); return; }
     h.potions--; this.sfx('potion');
     const heal = Math.ceil(S.maxHp * 0.5);
@@ -3571,9 +3892,32 @@ class Component extends DCLogic {
     this.touch(true);
   }
 
+  potCost() { return Math.round(POTION * (1 + 0.22 * (this.g.hero.level - 1))); }
+  manaCost() { return Math.round(30 * (1 + 0.24 * (this.g.hero.level - 1))); }
+  buyMana() {
+    const h = this.g.hero, pc = this.manaCost();
+    if (h.gold >= pc) { h.gold -= pc; h.mpots = (h.mpots || 0) + 1; this.toast('Bought a mana potion for ' + pc + 'g.', '#6ab7ff'); }
+    else this.toast('Not enough gold.', '#e8808a');
+    this.touch(true); this.refocus();
+  }
+  useMana() {
+    const g = this.g, h = g.hero, S = this.stats();
+    if (g.mode !== 'play') return;
+    if (!(h.mpots > 0)) { this.toast('No mana potions. Buy one for ' + this.manaCost() + ' gold.', '#e8808a'); this.touch(true); return; }
+    if (h.mp >= S.maxMp) { this.toast('Mana is already full.', '#d8cbb8'); this.touch(true); return; }
+    h.mpots--; this.sfx('potion');
+    const gain = Math.ceil(S.maxMp * 0.5);
+    h.mp = Math.min(S.maxMp, h.mp + gain);
+    this.text(g.p.x + 11, g.p.y - 10, '+' + gain + ' MP', '#6ab7ff');
+    this.burst(g.p.x + 11, g.p.y + 16, 10, '#6ab7ff');
+    this.toast('Mana potion used. Recovered ' + gain + ' MP.', '#6ab7ff');
+    this.touch(true);
+  }
+
   buyPot() {
     const h = this.g.hero;
-    if (h.gold >= POTION) { h.gold -= POTION; h.potions++; this.toast('Bought a potion.', '#7be08f'); }
+    const pc = this.potCost();
+    if (h.gold >= pc) { h.gold -= pc; h.potions++; this.toast('Bought a health potion for ' + pc + 'g.', '#7be08f'); }
     else this.toast('Not enough gold.', '#e8808a');
     this.touch(true); this.refocus();
   }
@@ -3873,12 +4217,13 @@ class Component extends DCLogic {
   breakCandle(cd) {
     const g = this.g, h = g.hero, R = this.cur.R, x = cd.c * T + 16, y = cd.r * T + 8;
     cd.alive = false;
-    this.burst(x, y, 8, '#ffcf70');
-    const gold = Math.round((3 + Math.random() * 5) * (1 + 0.3 * (g.stage - 1) + 0.2 * R.tier));
+    this.burst(x, y, 8, cd.style ? '#a88a64' : '#ffcf70');
+    const gold = Math.round((3 + Math.random() * 5) * (1 + 0.3 * (g.stage - 1) + 0.2 * R.tier) * (cd.style === 'crate' ? 1.6 : cd.style === 'urn' ? 1.2 : 1));
     h.gold += gold; this.text(x, y - 8, '+' + gold + 'g', '#ffd166');
     const roll = Math.random();
-    if (roll < 0.1) { h.potions++; this.toast('A potion fell from the candle.', '#7be08f'); }
-    else if (roll < 0.135) this.dropItem(x, y, genItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], h.level, rollRarity(R.tier > 1 ? 0.6 : 0, 0)));
+    if (roll < 0.09) { h.potions++; this.toast('A potion was hidden inside.', '#7be08f'); }
+    else if (roll < 0.17) { h.mpots = (h.mpots || 0) + 1; this.toast('A mana potion was hidden inside.', '#6ab7ff'); }
+    else if (roll < (cd.style === 'crate' ? 0.3 : 0.2)) this.dropItem(x, y, genItem(SLOTS[Math.floor(Math.random() * SLOTS.length)], h.level, rollRarity(R.tier > 1 ? 0.6 : 0, 0)));
     g.dirty = true;
   }
 
@@ -3918,7 +4263,7 @@ class Component extends DCLogic {
   groundAhead(e) {
     const col = Math.floor((e.dir > 0 ? e.x + e.w + 3 : e.x - 3) / T), row = Math.floor((e.y + e.h + 3) / T);
     const sl = t => t === '/' || t === '\\';
-    return this.solid(col, row) || this.tile(col, row) === '=' || sl(this.tile(col, row)) || sl(this.tile(col, row - 1));
+    return this.solid(col, row) || this.ow(col, row) || sl(this.tile(col, row)) || sl(this.tile(col, row - 1));
   }
 
   /* ---------- enemy AI ---------- */
@@ -4529,25 +4874,77 @@ class Component extends DCLogic {
     h.sub = k; this.toast('Weapon: ' + this.subName(k), '#cfe8ff'); this.touch(true);
   }
 
-  sklv(k, i) { return (this.g.hero.skLv && this.g.hero.skLv[k + i]) || 1; }
+  trRank(id) { const h = this.g.hero; return (h.tr && h.tr[id]) || 0; }
+  trSpent(k) { return TREE[k].reduce((a, n) => a + this.trRank(n.id), 0); }
+  trSpentAll() { return SKORD.reduce((a, k) => a + this.trSpent(k), 0); }
+  spFree() { return Math.max(0, spTotal(this.g.hero.level) - this.trSpentAll()); }
+  trGate(k, n) { return this.trSpent(k) >= TRG[n.t]; }
+  trLearn(k, id) {
+    const h = this.g.hero, n = TREE[k].find(q => q.id === id); if (!n) return;
+    if (!h.tr) h.tr = {};
+    if ((h.tr[id] || 0) >= n.max) return;
+    if (!this.trGate(k, n)) { this.toast('Spend ' + TRG[n.t] + ' points in the ' + TRNAME[k] + ' tree first.', '#e8808a'); return; }
+    if (this.spFree() <= 0) { this.toast('No skill points left. Level up to earn more.', '#e8808a'); return; }
+    h.tr[id] = (h.tr[id] || 0) + 1; this.sfx('levelup'); if (n.a !== undefined && h.tr[id] === 1) { this.bound(k, 0), this.bound(k, 1), this.bound(k, 2); this.hbPut('s:' + k + ':' + n.a); }
+    this.toast(n.n + ' rank ' + h.tr[id] + '/' + n.max, '#ffd166');
+    this.afterGear && this.afterGear(this.stats().maxHp);
+  }
+  trResetCost() { return this.g.hero.level * 20; }
+  trReset() {
+    const h = this.g.hero;
+    if (!this.trSpentAll()) return;
+    const c = this.trResetCost();
+    if (h.gold < c) { this.toast('Respec costs ' + c + 'g.', '#e8808a'); return; }
+    h.gold -= c; h.tr = {}; this.toast('Skill points refunded.', '#9ad0b5');
+  }
+  trApply(X) {
+    for (const k of SKORD) for (const n of TREE[k]) { const r = this.trRank(n.id); if (r && n.fx) for (const q in n.fx) X[q] = (X[q] || 0) + n.fx[q] * r; }
+  }
+  trFxText(n, r) { return Object.keys(n.fx).map(q => { const v = Math.round(n.fx[q] * r * 10) / 10, L = STATLBL[q]; return '+' + v + (L[1] || '') + ' ' + L[0].toLowerCase(); }).join(', '); }
+  trAct(k, i) { return TREE[k].find(n => n.a === i); }
+  bound(k, j) {
+    const h = this.g.hero; if (!h.bind) h.bind = {};
+    const b = h.bind[k] || (h.bind[k] = [-1, -1, -1]), ok = x => x >= 0 && this.trRank(this.trAct(k, x).id) > 0;
+    if (ok(b[j])) return b[j];
+    for (let i = 0; i < SK[k].length; i++) if (ok(i) && b.indexOf(i) < 0) { b[j] = i; return i; }
+    b[j] = -1; return -1;
+  }
+  bindTo(k, j, i) {
+    const h = this.g.hero; this.bound(k, 0); const b = h.bind[k], old = b[j], oj = b.indexOf(i);
+    if (oj >= 0) b[oj] = old; b[j] = i;
+  }
+  trPanel() {
+    const h = this.g.hero, k = this.skTab || h.sub || 'sword', free = this.spFree();
+    const tabs = SKORD.map(q => ({ name: TRNAME[q] + ' ' + this.trSpent(q), bg: q === k ? '#4a2a22' : '#2a1c1a', go: () => { this.skTab = q; this.touch(true); this.refocus(); } }));
+    const bd = [0, 1, 2].map(j => this.bound(k, j));
+    const nodes = TREE[k].map((n, idx) => {
+      const r = this.trRank(n.id), gate = this.trGate(k, n), can = gate && r < n.max && free > 0, act = n.a !== undefined;
+      let desc, now;
+      if (act) {
+        const q = SK[k][n.a]; desc = q.d + ' · ' + q.cost + ' MP · cd ' + q.cd + 's · each rank: +17% dmg, −6% mana, −7% cooldown';
+        now = r ? 'Rank ' + r + ': damage ×' + (Math.round((0.5 + 0.17 * (r - 1)) * 100) / 100) + (bd.indexOf(n.a) >= 0 ? ' · on key ' + ['K', 'L', 'I'][bd.indexOf(n.a)] : ' · not bound') : 'Not learned';
+      } else { desc = this.trFxText(n, 1) + ' per rank'; now = r ? 'Now: ' + this.trFxText(n, r) : 'Not learned'; }
+      const bj = j => bd[j] === n.a;
+      return {
+        hasHead: idx === 0 || TREE[k][idx - 1].t !== n.t, head: TRTIER[n.t] + (gate ? '' : '  ·  LOCKED'),
+        name: (act ? '★ ' : '') + n.n, rank: r + ' / ' + n.max, desc, now,
+        col: !gate ? '#3a2a28' : act ? '#ffd166' : '#6ab7ff', bg: gate ? '#231716' : '#181010', tc: r ? '#ffe9a8' : gate ? '#f0e3c0' : '#6f6458',
+        btn: r >= n.max ? 'MAX' : '+', op: can ? 1 : 0.4, learn: () => { this.trLearn(k, n.id); this.touch(true); this.refocus(); },
+        hasBind: act && r > 0, bk: bj(0) ? '#6a4a22' : '#2a1c1a', bl: bj(1) ? '#6a4a22' : '#2a1c1a', bi: bj(2) ? '#6a4a22' : '#2a1c1a',
+        goK: () => { this.bindTo(k, 0, n.a); this.touch(true); this.refocus(); }, goL: () => { this.bindTo(k, 1, n.a); this.touch(true); this.refocus(); }, goI: () => { this.bindTo(k, 2, n.a); this.touch(true); this.refocus(); }
+      };
+    });
+    return { skPts: 'Skill points: ' + free + '  (spent ' + this.trSpentAll() + ')', skTabs: tabs, skNodes: nodes, skReset: () => { this.trReset(); this.touch(true); this.refocus(); }, skResetLabel: 'Respec ' + this.trResetCost() + 'g' };
+  }
+  sklv(k, i) { return Math.max(1, this.trRank(this.trAct(k, i).id)); }
   skillCost(S, k, i) { return Math.max(1, Math.round(SK[k][i].cost * (1.25 - 0.06 * (this.sklv(k, i) - 1)) * (1 - S.mpr / 100))); }
   skillCd(S, k, i) { return Math.max(0.2, SK[k][i].cd * (1.3 - 0.07 * (this.sklv(k, i) - 1)) * (1 - S.cdr / 100)); }
   skillMul(k, i) { return 0.5 + 0.17 * (this.sklv(k, i) - 1); }
   skUnlock(k, i) {
-    const h = this.g.hero, req = SKREQ[k][i], gr = (k === 'sword' ? SKGEAR.sword : SKGEAR.other)[i];
-    if (h.level >= req) return { ok: true };
-    if (gr && gr.f(h.equip)) return { ok: true, gear: true };
-    return { ok: false, why: 'Reach Lv ' + req + (gr ? ' or wear ' + gr.t : '') };
+    if (this.trRank(this.trAct(k, i).id) > 0) return { ok: true };
+    return { ok: false, why: 'Learn it in the Skills tab' };
   }
-  skillGain(k, i) {
-    const h = this.g.hero;
-    if (!h.skLv) { h.skLv = {}; h.skXp = {}; }
-    const key = k + i, lv = h.skLv[key] || 1;
-    if (lv >= SKMAX) return;
-    h.skXp[key] = (h.skXp[key] || 0) + 1;
-    const need = Math.round(5 * Math.pow(lv, 1.5));
-    if (h.skXp[key] >= need) { h.skXp[key] = 0; h.skLv[key] = lv + 1; this.toast(SK[k][i].n + ' reached Lv ' + (lv + 1) + '!', '#ffd166'); }
-  }
+  skillGain(k, i) { }
 
   explode(x, y, r, dmg) {
     const cur = this.cur;
@@ -4603,19 +5000,121 @@ class Component extends DCLogic {
     }
   }
 
-  useSkill(n) {
-    const g = this.g, h = g.hero, p = g.p, S = this.stats(), k = h.sub || 'sword', i = n - 1, key = k + i;
+  /* ---------- hotbar ---------- */
+  hbInit() {
+    const h = this.g.hero;
+    if (!h.hb || h.hb.length !== 12) {
+      h.hb = ['a:sword', 'a:bow', 'a:darts', 'a:bolt', null, null, null, null, null, null, 'a:' + (h.sub || 'sword'), null];
+      for (const k of SKORD) for (const n of TREE[k]) if (n.a !== undefined && this.trRank(n.id) > 0) this.hbPut('s:' + k + ':' + n.a);
+    }
+    return h.hb;
+  }
+  hbPut(e) {
+    const hb = this.hbInit(); if (hb.indexOf(e) >= 0) return;
+    for (let i = 4; i < 10; i++) if (!hb[i]) { hb[i] = e; return; }
+    if (!hb[11]) hb[11] = e;
+  }
+  hbInfo(e) {
+    const h = this.g.hero, a = e.split(':'), k = a[1];
+    if (a[0] === 'a') return { name: 'Attack ' + this.subName(k), ok: !!h.weapons[k], k };
+    const i = +a[2], q = SK[k][i], n = this.trAct(k, i);
+    return { name: q.n, ok: !!h.weapons[k] && this.trRank(n.id) > 0, k, i };
+  }
+  hbRun(ix) {
+    const g = this.g, h = g.hero, p = g.p; if (g.mode !== 'play' || g.panel || !p) return;
+    const e = this.hbInit()[ix]; if (!e) { if (ix < 10 || !(p.skCd.empty > 0)) { this.toast('Empty slot. Click the slot to set a skill or attack.', '#a89a8c'); p.skCd.empty = 0.8; } return; }
+    const f = this.hbInfo(e);
+    if (!f.ok) { this.toast(f.name + ': not available (weapon or skill not learned).', '#e8808a'); return; }
+    if (h.sub !== f.k) { h.sub = f.k; this.touch(true); }
+    if (e[0] === 'a') p.want = 0.22; else p.skx = { k: f.k, i: f.i };
+  }
+  hbUi() {
+    const g = this.g, h = g.hero, p = g.p, S = this.stats(), hb = this.hbInit();
+    const order = [10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11], lab = { 10: 'LM', 11: 'RM' };
+    const hotbar = order.map((ix, n) => {
+      const e = hb[ix], key = lab[ix] || String((ix + 1) % 10), ml = (n === 1 || n === 11) ? '10px' : '0px', go = () => { this.hbOpen = this.hbOpen === ix ? null : ix; this.touch(true); this.refocus(); };
+      if (!e) return { key, name: '', cost: '', cdW: '0%', col: this.hbOpen === ix ? '#c9a24a' : '#3a2a28', tc: '#6f6458', ml, go, tip: 'Empty slot ' + key };
+      const f = this.hbInfo(e); let cd = 0, cost = '';
+      if (e[0] === 's') { const mx = this.skillCd(S, f.k, f.i); cd = clamp(Math.max(0, p.skCd[f.k + f.i] || 0) / mx * 100, 0, 100); cost = this.skillCost(S, f.k, f.i) + ''; }
+      return { key, name: f.name, cost, cdW: cd + '%', col: this.hbOpen === ix ? '#ffe9a8' : (e[0] === 'a' ? '#8a6a44' : '#c9a24a'), tc: f.ok ? '#f0e3c0' : '#6f6458', ml, go, tip: f.name };
+    });
+    let hbOpts = [], hbTitle = '';
+    if (this.hbOpen != null) {
+      const ix = this.hbOpen; hbTitle = 'Set slot ' + (lab[ix] || (ix + 1) % 10) + (ix >= 10 ? ' (mouse ' + (ix === 10 ? 'left' : 'right') + ' button)' : '');
+      const set = (v) => () => { this.hbInit()[ix] = v; this.hbOpen = null; this.touch(true); this.refocus(); };
+      hbOpts.push({ label: '— Clear slot —', bg: '#2a1c1a', pick: set(null) });
+      for (const k of SKORD) if (h.weapons[k]) hbOpts.push({ label: 'Attack · ' + this.subName(k), bg: '#3a2a22', pick: set('a:' + k) });
+      for (const k of SKORD) for (const n of TREE[k]) if (n.a !== undefined && this.trRank(n.id) > 0) hbOpts.push({ label: TRNAME[k] + ' · ' + SK[k][n.a].n + ' (' + this.skillCost(S, k, n.a) + ' MP)', bg: '#2a2236', pick: set('s:' + k + ':' + n.a) });
+      hbOpts.push({ label: 'Cancel', bg: '#231716', pick: () => { this.hbOpen = null; this.touch(true); this.refocus(); } });
+    }
+    return { hotbar, hbOpts, hbTitle, hbShow: this.hbOpen != null };
+  }
+
+  useSkill(n, kk, ii) {
+    const g = this.g, h = g.hero, p = g.p, S = this.stats(), k = kk || h.sub || 'sword', i = ii !== undefined ? ii : this.bound(k, n - 1);
+    if (i < 0) { if (!(p.skCd.empty > 0)) { this.toast('No skill on this key. Learn skills in the Skills tab.', '#e8808a'); p.skCd.empty = 0.8; } return; }
+    const key = k + i, an = SK[k][i].an !== undefined ? SK[k][i].an : i;
     if ((p.skCd[key] || 0) > 0 || p.pend) return;
-    const un = this.skUnlock(k, i);
-    if (!un.ok) { this.toast(SK[k][i].n + ' locked: ' + un.why, '#e8808a'); p.skCd[key] = 0.6; this.touch(); return; }
     const cost = this.skillCost(S, k, i);
     if (h.mp < cost) { this.toast('Not enough mana.', '#e8808a'); p.skCd[key] = 0.25; this.touch(); return; }
-    if (k === 'bolt' && i !== 1 && !this.boltTargets(p, i === 0 ? 360 : 300, 220).length) { this.toast('No target in range.', '#a89a8c'); p.skCd[key] = 0.25; this.touch(); return; }
-    this.skillGain(k, i); h.mp -= cost; p.skCd[key] = this.skillCd(S, k, i); this.fire('skill', {});
-    p.skAnim = 0.55; p.skMax = 0.55; p.skKind = key; p.pend = { k, i, t: SKDELAY[key] }; p.castT = 0.3; this.sfx('skill'); this.touch();
+    if (k === 'bolt' && (i === 0 || i === 3 || i === 6 || i === 2) && !this.boltTargets(p, i === 0 ? 360 : 300, 220).length) { this.toast('No target in range.', '#a89a8c'); p.skCd[key] = 0.25; this.touch(); return; }
+    h.mp -= cost; p.skCd[key] = this.skillCd(S, k, i); this.fire('skill', {});
+    p.skAnim = 0.55; p.skMax = 0.55; p.skKind = k + an; p.pend = { k, i, t: SKDELAY[k + an] || 0.2 }; p.castT = 0.3; this.sfx('skill'); this.touch();
+  }
+
+  execSkillX(k, i) {
+    const g = this.g, h = g.hero, p = g.p, cur = this.cur, S = this.stats(), f = p.face, ox = p.x + 11 + f * 12, oy = p.y + 14, px = p.x + 11, py = p.y + 17, gy = p.y + 34;
+    const dmg = S.atk * S.sk[k] * this.skillMul(k, i);
+    const sh = (o) => cur.shots.push(Object.assign({ x: ox, y: oy, life: 1.2, hits: 0, seen: [] }, o));
+    const foes = (rx, ry, front) => cur.enemies.filter(e => !e.dead && !e.pet && Math.abs(e.x + e.w / 2 - px) < rx + e.w / 2 && Math.abs(e.y + e.h / 2 - py) < ry && (!front || (e.x + e.w / 2 - px) * f > -12));
+    const stun = (e, t) => { if (BOSST.indexOf(e.t) < 0) e.stun = Math.max(e.stun || 0, t); };
+    const slow = (e, t) => { e.slow = Math.max(e.slow || 0, t); };
+    const dh = (e, m) => this.hitEnemy(e, dmg * m, e.x + e.w / 2 > px ? 1 : -1, true);
+    const heal = (fr) => { h.hp = Math.min(S.maxHp, h.hp + S.maxHp * fr); this.text(px, p.y - 14, '+' + Math.round(S.maxHp * fr), '#7fe08a'); };
+    const key = k + i;
+    if (k === 'sword') {
+      if (i === 3) { this.sfx('wave'); for (const e of foes(78, 54, true)) { dh(e, 1.3); stun(e, 1.3); } this.ring(px + f * 30, py, '#cfe8ff'); this.burst(px + f * 34, py, 10, '#cfe8ff'); }
+      else if (i === 4) { for (const e of foes(86, 70, true)) dh(e, 1.7); p.vy = -380; p.onGround = false; this.ring(px + f * 24, py, '#ffe9a8'); this.burst(px + f * 24, py - 10, 12, '#ffe9a8'); }
+      else if (i === 5) { (g.buf || (g.buf = {})).atk = { m: 1.35, t: 8 }; heal(0.12); this.ring(px, py, '#ffb454'); this.burst(px, py, 20, '#ffb454'); this.toast('Battle Cry! +35% attack', '#ffb454'); }
+      else if (i === 6) { this.explode(px, gy, 115, dmg * 1.8); for (const e of foes(125, 64)) stun(e, 0.9); this.ring(px, gy - 6, '#c9a24a'); this.burst(px, gy, 22, '#8d8478'); }
+      else if (i === 7) { this.sfx('wave'); for (const dy of [-14, 4, 22]) sh({ k: 'wave', y: p.y + 10 + dy, vx: f * 440, vy: 0, dmg: dmg * 0.95, life: 0.7, pierce: 99, ng: true, f }); }
+      else if (i === 8) { p.inv = Math.max(p.inv, 1.6); heal(0.08); this.ring(px, py, '#ffd166'); this.burst(px, py, 14, '#ffd166'); this.toast('Parry Stance', '#ffd166'); }
+      else { this.sfx('dash'); p.dash = 0.3; p.dashDmg = dmg * 3.2; p.dsw = ++p.swing; p.inv = Math.max(p.inv, 0.42); this.burst(px, p.y + 30, 12, '#ff6a6a'); }
+    } else if (k === 'bow') {
+      this.sfx('arrow');
+      if (i === 3) for (let n = 0; n < 7; n++) sh({ k: 'arrow', x: px + f * (80 + n * 40), y: p.y - 180 - (n % 2) * 30, vx: 0, vy: 620, dmg: dmg * 0.9, pierce: 2, life: 1.0 });
+      else if (i === 4) { for (const e of foes(200, 80, true)) { dh(e, 0.9); slow(e, 3); } this.ring(px + f * 90, gy - 6, '#6ab7ff'); this.burst(px + f * 90, gy - 4, 14, '#cfe8ff'); }
+      else if (i === 5) for (let n = 0; n < 3; n++) sh({ k: 'arrow', y: oy - 4 + (n - 1) * 5, vx: f * (820 + n * 40), vy: -4, dmg: dmg * 0.9, pierce: 1 });
+      else if (i === 6) sh({ k: 'arrow', y: oy - 3, vx: f * 1100, vy: 0, dmg: dmg * 4, pierce: 99, big: 1 });
+      else if (i === 7) for (let n = 0; n < 8; n++) { const a = (n - 3.5) * 0.025; sh({ k: 'arrow', x: ox - f * n * 4, y: oy - 4, vx: Math.cos(a) * 760 * f, vy: Math.sin(a) * 760, dmg: dmg * 0.6, pierce: 1 }); }
+      else if (i === 8) { p.vx = -f * 420; p.vy = -220; p.onGround = false; p.inv = Math.max(p.inv, 0.55); sh({ k: 'arrow', y: oy - 3, vx: f * 760, vy: 0, dmg: dmg * 1.4, pierce: 2, big: 1 }); this.burst(px, p.y + 30, 8, '#cfe8ff'); }
+      else for (let n = 0; n < 20; n++) sh({ k: 'arrow', x: px + f * (-40 + n * 22), y: p.y - 220 - (n % 4) * 25, vx: 0, vy: 600, dmg: dmg * 0.7, pierce: 2, life: 1.1 });
+    } else if (k === 'darts') {
+      if (i === 3) sh({ k: 'dart', vx: f * 720, vy: 0, dmg: dmg * 1.5, life: 0.8, pierce: 3, ng: true });
+      else if (i === 4) for (let n = 0; n < 5; n++) sh({ k: 'dart', vx: f * (150 + n * 80), vy: -320 + n * 10, dmg: dmg * 0.9, life: 1.0, pierce: 1 });
+      else if (i === 5) { for (const e of foes(135, 80)) { dh(e, 0.6); stun(e, 1.0); e.conf = Math.max(e.conf || 0, 1.5); } p.inv = Math.max(p.inv, 1.0); this.ring(px, py, '#a89a8c'); this.burst(px, py, 26, '#8d8478'); this.toast('Smoke Bomb', '#a89a8c'); }
+      else if (i === 6) for (let n = -3; n <= 3; n++) { const a = n * 0.1; sh({ k: 'dart', vx: Math.cos(a) * 600 * f, vy: Math.sin(a) * 600, dmg: dmg * 0.75, life: 0.8, ng: true }); }
+      else if (i === 7) for (const dy of [2, 22]) sh({ k: 'boom', y: p.y + dy, vx: f * 470, vy: 0, dmg: dmg, life: 2.2, pierce: 99, t: 0 });
+      else if (i === 8) sh({ k: 'boom', y: p.y + 8, vx: f * 380, vy: 0, dmg: dmg * 2, life: 3.2, pierce: 99, t: 0 });
+      else { p.inv = Math.max(p.inv, 0.6); p.whirl = 0.4; p.whT = 0; p.whDmg = dmg * 0.5; for (let a = 0; a < 16; a++) { const an = a / 16 * Math.PI * 2; sh({ k: 'dart', x: px, y: py, vx: Math.cos(an) * 420, vy: Math.sin(an) * 420, dmg: dmg * 0.8, life: 0.7, pierce: 2, ng: true }); } this.ring(px, py, '#cfe8ff'); }
+    } else {
+      const tg = this.boltTargets(p, 360, 220), jag = 24;
+      if (i === 3) { if (tg[0]) this.zap([px + f * 20, p.y + 8], tg[0], dmg * 1.3); }
+      else if (i === 4) { this.explode(px, py, 95, dmg * 1.1); for (const e of foes(105, 70)) slow(e, 3); this.ring(px, py, '#6ab7ff'); }
+      else if (i === 5) {
+        const L = 440, y0 = py - 4, pts = [[px + f * 14, y0]]; for (let q = 1; q < 10; q++) pts.push([px + f * (14 + L * q / 10), y0 + (Math.random() - 0.5) * 20]); pts.push([px + f * L, y0]); cur.bolts.push({ pts, t: 0.35 });
+        for (const e of cur.enemies) if (!e.dead && !e.pet && (e.x + e.w / 2 - px) * f > 0 && Math.abs(e.x + e.w / 2 - px) < L && e.y < y0 + 26 && e.y + e.h > y0 - 26) dh(e, 2.0);
+        this.burst(px + f * 30, y0, 10, '#cfe8ff');
+      }
+      else if (i === 6) { let n = 0; for (const t of tg.slice(0, 4)) { this.zap([px + f * 20, p.y + 8], t, dmg * 1.25, 30); n++; } }
+      else if (i === 7) for (let n = 0; n < 4; n++) { const x = px + f * (110 + n * 70) + (Math.random() - 0.5) * 20, y = gy - 4; cur.bolts.push({ pts: [[x + 12, y - 320], [x + 4, y - 200], [x - 4, y - 100], [x, y]], t: 0.35 }); this.explode(x, y - 10, 58, dmg * 1.5); }
+      else if (i === 8) { h.mp = Math.min(S.maxMp, h.mp + S.maxMp * 0.4); (g.buf || (g.buf = {})).spd = { m: 1.25, t: 6 }; this.ring(px, py, '#6ab7ff'); this.burst(px, py, 20, '#6ab7ff'); this.toast('Mana Surge', '#6ab7ff'); }
+      else for (let n = 0; n < 7; n++) { const x = px + (n - 3) * 82 + (Math.random() - 0.5) * 20, y = gy - 4; cur.bolts.push({ pts: [[x + 12, y - 320], [x - 4, y - 160], [x, y]], t: 0.4 }); this.explode(x, y - 10, 52, dmg * 1.3); }
+    }
   }
 
   execSkill(k, i) {
+    if (i >= 3) return this.execSkillX(k, i);
     const g = this.g, p = g.p, cur = this.cur, S = this.stats();
     const f = p.face, ox = p.x + 11 + f * 12, oy = p.y + 14, dmg = S.atk * S.sk[k] * this.skillMul(k, i);
     const sh = (o) => cur.shots.push(Object.assign({ x: ox, y: oy, life: 1.2, hits: 0, seen: [] }, o));
@@ -4690,6 +5189,7 @@ class Component extends DCLogic {
     const g = this.g, p = g.p, cur = this.cur, R = cur.R, h = g.hero, K = this.keys, S = this.stats();
     this._mainEl = mainElOf(S.en); if (p.swapCd > 0) p.swapCd -= dt;
     g.t += dt; g.fade = Math.max(0, g.fade - dt * 3); g.doorCd = Math.max(0, g.doorCd - dt);
+    if (g.mode === 'play') this.platTick(dt);
     if (AU.ctx) {
       AU.setTrack(g.mode === 'title' ? 'japan' : (R.act === 4 ? 'china' : R.act === 3 ? 'egypt' : R.act === 2 ? 'nordic' : 'japan'));
       AU.setState(g.mode === 'dead');
@@ -4730,7 +5230,7 @@ class Component extends DCLogic {
     }
     p.jumpBuf = Math.max(0, p.jumpBuf - dt); p.coyote = Math.max(0, p.coyote - dt);
     if (S.regen > 0 && h.hp > 0 && h.hp < S.maxHp) { h.hp = Math.min(S.maxHp, h.hp + S.regen * dt); g.dirty = true; }
-    p.inv = Math.max(0, p.inv - dt); p.want = Math.max(0, p.want - dt); if (this.keys.KeyJ || this.keys.KeyX || this.keys.KeyZ) p.want = Math.max(p.want, 0.1); p.dropT = Math.max(0, p.dropT - dt);
+    p.inv = Math.max(0, p.inv - dt); p.want = Math.max(0, p.want - dt); for (const ix of [10, 11]) { const e0 = this.mh[ix] && h.hb && h.hb[ix]; if (e0 && e0[0] === 'a' && e0.slice(2) === (h.sub || 'sword')) p.want = Math.max(p.want, 0.1); } if (this.keys.KeyJ || this.keys.KeyX || this.keys.KeyZ) p.want = Math.max(p.want, 0.1); p.dropT = Math.max(0, p.dropT - dt);
     p.atkCd -= dt; p.atkT -= dt; p.tameCd = Math.max(0, (p.tameCd || 0) - dt);
     if (h.rally > 0) h.rally -= dt;
     if (p.chillT > 0) { p.chillT -= dt; if (p.chillT <= 0) p.chill = 0; }
@@ -4748,13 +5248,14 @@ class Component extends DCLogic {
     p.skAnim -= dt;
     for (const key in p.skCd) if (p.skCd[key] > 0) p.skCd[key] -= dt;
     if (p.skq) { const n = p.skq; p.skq = 0; this.useSkill(n); }
+    if (p.skx) { const q = p.skx; p.skx = null; this.useSkill(0, q.k, q.i); }
     if (p.pend) { p.pend.t -= dt; if (p.pend.t <= 0) { const q = p.pend; p.pend = null; this.execSkill(q.k, q.i); } }
     if (p.dash > 0) { p.dash -= dt; p.vx = p.face * 650; }
     if (p.onGround) p.air2 = false;
     if (p.jumpBuf > 0) {
       if (p.coyote > 0) {
         const under = this.tile(Math.floor((p.x + 11) / T), Math.floor((p.y + p.h + 1) / T));
-        if (down && under === '=') { p.dropT = 0.25; p.coyote = 0; p.jumpBuf = 0; p.y += 2; }
+        if (down && (under === '=' || under === '~')) { p.dropT = 0.25; p.coyote = 0; p.jumpBuf = 0; p.y += 2; }
         else { this.sfx('jump'); p.vy = -JUMP; p.coyote = 0; p.jumpBuf = 0; p.onGround = false; this.burst(p.x + 11, p.y + 34, 4, '#a89a8c'); }
       } else if (h.hasWing && !p.air2) {
         p.vy = -JUMP * 0.92; p.air2 = true; p.jumpBuf = 0; this.sfx('djump');
@@ -4883,6 +5384,7 @@ class Component extends DCLogic {
     }
     }
 
+    if (g.mode === 'play') this.directorTick(dt);
     // enemies
     for (const e of cur.enemies) {
       if (e.dead) continue;
@@ -4898,7 +5400,8 @@ class Component extends DCLogic {
       if (e.elite) this.eliteTick(e, dt);
       this.dmgSrc = e;
       const edt = e.slow > 0 ? dt * 0.5 : dt;
-      if (this.aiEnemy(e, edt)) { if (g.mode !== 'play') return; }
+      const _bt = BEH[e.t], _rt = e.t; let _ar; if (_bt) { e.t = _bt; try { _ar = this.aiEnemy(e, edt); } finally { e.t = _rt; } } else _ar = this.aiEnemy(e, edt);
+      if (_ar) { if (g.mode !== 'play') return; }
       else if (e.t === 'bat') {
         const near = Math.hypot(dx, dy) < 300;
         const tx = near ? p.x + 11 : e.hx + 14 + Math.sin(g.t * 0.8 + e.ph) * 70, ty = near ? p.y + 10 : e.hy + Math.sin(g.t * 2 + e.ph) * 16;
@@ -4974,6 +5477,14 @@ class Component extends DCLogic {
           const info = { bow: 'Hunter\'s Bow: a fast arrow that pierces two foes (4 MP).', darts: 'Silver Darts: throw a fan of three (6 MP).', bolt: 'Storm Sigil: lightning chains to 3 targets (16 MP).' }[k];
           this.toast(info + ' Swap with E or 1-4; skills on K / L / I.', '#cfe8ff');
         }
+        if (pk.kind === '$') {
+          const sh = SHRINES[pk.tid % 4], BF = g.buf || (g.buf = {});
+          if (pk.tid % 4 === 0) BF.atk = { m: 1.3, t: 120 }; else if (pk.tid % 4 === 1) BF.spd = { m: 1.25, t: 120 };
+          else if (pk.tid % 4 === 2) { h.hp = S.maxHp; h.mp = S.maxMp; } else { const gd = Math.round((40 + 25 * g.stage + 15 * R.tier) * (1 + 0.1 * h.level)); h.gold += gd; this.text(p.x + 11, p.y - 14, '+' + gd + 'g', '#ffd166'); }
+          this.toast(sh.msg, sh.col); this.ring(pk.x + 12, pk.y + 12, sh.col);
+        }
+        if (pk.kind === '+') { h.hp = S.maxHp; h.mp = S.maxMp; this.toast('The spring washes your wounds away. HP and MP restored.', '#7fd0ff'); this.ring(pk.x + 12, pk.y + 12, '#7fd0ff'); }
+        if (pk.kind === '?') { const L = LORE[R.theme] || LORE.gothic; this.toast(L[(hashU(R.id + pk.key) >>> 0) % L.length], '#d8cbb8'); }
         if (pk.kind === 'H') { const old = S.maxHp; h.hpUp += 15; h.hp += 15; this.toast('Heart Relic: max HP +15.', '#e8808a'); }
         this.touch(true);
         return false;
@@ -5478,6 +5989,182 @@ class Component extends DCLogic {
     }
   }
 
+  /* ---------- scene director: runtime ---------- */
+  ow(c, r) { const t = this.tile(c, r); return t === '=' || t === '~'; }
+  buildDirector(cur, R) {
+    const g = this.g, id = R.id;
+    cur.mp = (R.mp || []).map(m => ({ bx: m.x0 * T, by: m.y0 * T, x: m.x0 * T, y: m.y0 * T, w: m.w * T, ax: m.ax, range: m.range, sp: m.sp, ph: m.ph, dx: 0, dy: 0 }));
+    cur.vents = (R.vents || []).map(v => ({ c: v.c, r: v.r, cd: 1.2 + v.ph })); cur.rocks = (R.rocks || []).map(q => ({ c: q.c, fy: q.fy, cd: 0 }));
+    cur.pend = (R.pend || []).map(q => ({ px: q.c * T + 16, py: 2 * T, len: q.len, ph: q.ph, sp: q.sp, bx: 0, by: 0, cd: 0 }));
+    cur.crum = {}; cur.crumR = [];
+    for (const pr of R.props || []) cur.candles.push({ c: pr.c, r: pr.r, alive: true, style: pr.style });
+    (R.shr || []).forEach((s, i) => { const key = id + ':sh' + i; if (!g.flags['got:' + key]) cur.pickups.push({ kind: s.kind, x: s.c * T + 4, y: (s.r + 1) * T - 24, w: 24, h: 24, key, tid: s.tid, open: false }); });
+    cur.arena = R.arena && !g.flags['arena:' + id] ? Object.assign({ state: 0, wave: 0, t: 0 }, R.arena) : null;
+    cur.dmgH = Math.round(9 + 4 * g.stage + 3 * R.tier);
+  }
+  platTick(dt) {
+    const g = this.g, cur = this.cur, p = g.p; if (!cur || !cur.mp || !p) return;
+    for (const m of cur.mp) {
+      const ox = m.x, oy = m.y, s = Math.sin(g.t * m.sp + m.ph) * m.range;
+      m.x = m.ax === 'x' ? m.bx + s : m.bx; m.y = m.ax === 'y' ? m.by + s : m.by; m.dx = m.x - ox; m.dy = m.y - oy;
+      if (p.vy >= 0 && p.x + p.w > ox + 2 && p.x < ox + m.w - 2 && Math.abs(p.y + p.h - oy) <= 4) { p.x += m.dx; p.y += m.dy; p.onGround = true; }
+    }
+  }
+  directorTick(dt) {
+    const g = this.g, cur = this.cur, p = g.p, R = cur.R, S = this.stats(), px = p.x + 11;
+    // crumbling floor
+    const fc = Math.floor(px / T), fr2 = Math.floor((p.y + p.h + 1) / T);
+    if (p.onGround && this.tile(fc, fr2) === '~') { const k = fc + ':' + fr2; if (!cur.crum[k]) cur.crum[k] = { t: 0.5, c: fc, r: fr2 }; }
+    for (const k in cur.crum) {
+      const q = cur.crum[k]; q.t -= dt;
+      if (q.t <= 0) { cur.grid[q.r][q.c] = '.'; cur.crumR.push({ c: q.c, r: q.r, t: 4 }); delete cur.crum[k]; this.burst(q.c * T + 16, q.r * T + 6, 8, '#8d8478'); }
+    }
+    for (const q of cur.crumR) { q.t -= dt; if (q.t <= 0 && !(Math.abs(px - (q.c * T + 16)) < 30 && Math.abs(p.y + 17 - q.r * T) < 40)) { cur.grid[q.r][q.c] = '~'; q.t = 1e9; q.done = true; } }
+    cur.crumR = cur.crumR.filter(q => !q.done);
+    // fire vents
+    for (const v of cur.vents) {
+      if (Math.abs(px - v.c * T) > 520) continue;
+      v.cd -= dt;
+      if (v.cd <= 0) { this.hazard('flame', v.c * T + 2, (v.r + 1) * T - 100, 28, 100, 0.7, 1.0, cur.dmgH); v.cd = 3.8; }
+    }
+    // falling rocks
+    for (const q of cur.rocks) {
+      q.cd -= dt;
+      if (q.cd <= 0 && Math.abs(px - (q.c * T + 16)) < 34 && p.y < q.fy - 20) {
+        this.hazard('rock', px - 16, 2 * T, 32, q.fy - 2 * T, 0.75, 0.3, Math.round(cur.dmgH * 1.3)); cur.hz[cur.hz.length - 1].l0 = 0.3; q.cd = 5.5;
+      }
+    }
+    // pendulum blades
+    for (const q of cur.pend) {
+      const a = Math.sin(g.t * q.sp + q.ph) * 0.95; q.bx = q.px + Math.sin(a) * q.len; q.by = q.py + Math.cos(a) * q.len; q.a = a;
+      if (p.inv <= 0 && Math.hypot(px - q.bx, p.y + 17 - q.by) < 24) this.damagePlayer(this.edmg(Math.round(cur.dmgH * 1.1), elOfKind('blade')), q.bx);
+    }
+    // arena
+    const A = cur.arena;
+    if (A) {
+      const inside = px > (A.c0 + 3) * T && px < (A.c1 - 2) * T && p.onGround && Math.abs(p.y + p.h - A.fr * T) < 4;
+      const gate = (ch) => { for (const c of [A.c0, A.c1]) for (let r = A.fr - 5; r < A.fr; r++) { if (ch === '|' ? cur.grid[r][c] === '.' : cur.grid[r][c] === '|') cur.grid[r][c] = ch; } };
+      if (A.state === 0 && inside && cur.enemies.filter(e => !e.dead && !e.pet && !e.arena).length < 40) {
+        A.state = 1; A.t = 0.6; gate('|'); g.shake = 0.5; this.sfx('door'); this.toast('The gates slam shut! Defeat all challengers.', '#e8808a'); this.touch();
+      } else if (A.state === 1) {
+        A.t -= dt;
+        const alive = cur.enemies.filter(e => e.arena && !e.dead).length;
+        if (A.t <= 0 && alive === 0 && !A.spawning) {
+          if (A.wave < A.waves.length) {
+            const ws = A.waves[A.wave++], lo = (A.c0 + 3) * T, hi = (A.c1 - 3) * T;
+            ws.forEach((ch, i) => { const x = lo + (hi - lo) * ((i + 0.5) / ws.length) + (Math.random() - 0.5) * 30; this.spawnAt(cur, ch, x, A.fr * T, R); const e = cur.enemies[cur.enemies.length - 1]; e.arena = true; this.burst(x, A.fr * T - 20, 12, '#c0a0ff'); });
+            this.toast('Wave ' + A.wave + ' / ' + A.waves.length, '#c9a24a'); A.t = 1.2;
+          } else {
+            A.state = 2; gate('.'); g.flags['arena:' + R.id] = true; this.sfx('altar');
+            const mid = Math.floor((A.c0 + A.c1) / 2), key = R.id + ':arena';
+            cur.pickups.push({ kind: 'C', x: mid * T + 4, y: A.fr * T - 24, w: 24, h: 24, key, open: false });
+            S.maxHp && (g.hero.hp = Math.min(S.maxHp, g.hero.hp + S.maxHp * 0.3));
+            this.burst(mid * T + 16, A.fr * T - 20, 24, '#ffd166'); this.toast('Trial complete! The gates open and a chest appears.', '#ffd166'); this.touch(true);
+          }
+        }
+      }
+    }
+  }
+  drawDirector(c, th) {
+    const g = this.g, cur = this.cur;
+    for (const m of cur.mp || []) {
+      const x = Math.round(m.x), y = Math.round(m.y);
+      glow(c, x + m.w / 2, y + 14, m.w * 0.8, hexA(th.edge, 0.12));
+      c.fillStyle = th.stoneD; c.fillRect(x, y + 4, m.w, 8); c.fillStyle = th.stone; c.fillRect(x, y, m.w, 6); c.fillStyle = th.edge; c.fillRect(x, y, m.w, 2);
+      c.fillStyle = th.edge; for (let i = 6; i < m.w - 4; i += 12) c.fillRect(x + i, y + 7, 3, 3);
+      c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1; c.strokeRect(x + 0.5, y + 0.5, m.w - 1, 11);
+    }
+    for (const v of cur.vents || []) {
+      const x = v.c * T, y = (v.r + 1) * T, hot = v.cd < 0.8 && v.cd > 0 ? 1 : 0;
+      c.fillStyle = '#1a1210'; c.fillRect(x + 2, y - 5, 28, 5); c.fillStyle = hot ? '#ff6a2a' : '#4a3a30'; for (let i = 0; i < 4; i++) c.fillRect(x + 5 + i * 6, y - 4, 3, 3);
+      if (hot) glow(c, x + 16, y - 4, 26, 'rgba(255,110,40,0.5)');
+    }
+    for (const q of cur.pend || []) {
+      if (q.bx === 0 && q.by === 0) continue;
+      c.strokeStyle = '#5a5a62'; c.lineWidth = 2; c.beginPath(); c.moveTo(q.px, q.py); c.lineTo(q.bx, q.by); c.stroke();
+      c.fillStyle = '#3a3a42'; c.beginPath(); c.arc(q.px, q.py, 5, 0, 7); c.fill();
+      c.save(); c.translate(q.bx, q.by); c.rotate(-q.a);
+      poly(c, [[-22, -4], [0, 16], [22, -4], [14, -9], [-14, -9]], '#aab2bc'); poly(c, [[-14, -9], [0, 8], [14, -9]], '#d8dde8'); c.fillStyle = '#4a4a52'; c.fillRect(-3, -14, 6, 8);
+      c.restore();
+    }
+    const A = cur.arena;
+    if (A && A.state === 0) { const gx = [A.c0, A.c1]; for (const cx2 of gx) { c.fillStyle = 'rgba(200,60,60,0.35)'; c.fillRect(cx2 * T + 12, (A.fr - 5) * T, 8, 5 * T); } }
+  }
+  drawProp(c, cd) {
+    const x = cd.c * T, y = (cd.r + 1) * T, st = cd.style;
+    c.fillStyle = 'rgba(0,0,0,0.3)'; c.beginPath(); c.ellipse(x + 16, y - 1, 11, 3, 0, 0, 7); c.fill();
+    if (st === 'urn') { poly(c, [[x + 10, y - 2], [x + 8, y - 14], [x + 11, y - 22], [x + 21, y - 22], [x + 24, y - 14], [x + 22, y - 2]], '#8a5a3a'); c.fillStyle = '#a8704a'; c.fillRect(x + 9, y - 24, 14, 3); c.fillStyle = '#d8a870'; c.fillRect(x + 10, y - 14, 12, 2); c.fillStyle = '#5a3a24'; c.fillRect(x + 20, y - 18, 2, 14); }
+    else if (st === 'barrel') { c.fillStyle = '#6a4a2a'; c.fillRect(x + 7, y - 22, 18, 21); c.fillStyle = '#8a6a3a'; c.fillRect(x + 9, y - 22, 4, 21); c.fillRect(x + 18, y - 22, 4, 21); c.fillStyle = '#2a2a30'; c.fillRect(x + 6, y - 19, 20, 2); c.fillRect(x + 6, y - 8, 20, 2); c.fillStyle = '#4a3220'; c.fillRect(x + 8, y - 24, 16, 3); }
+    else if (st === 'crate') { c.fillStyle = '#7a5a32'; c.fillRect(x + 6, y - 20, 20, 19); c.strokeStyle = '#3a2814'; c.lineWidth = 2; c.strokeRect(x + 7, y - 19, 18, 17); c.beginPath(); c.moveTo(x + 7, y - 19); c.lineTo(x + 25, y - 2); c.moveTo(x + 25, y - 19); c.lineTo(x + 7, y - 2); c.stroke(); }
+    else { c.fillStyle = '#c8c0a8'; c.beginPath(); c.arc(x + 16, y - 12, 8, 0, 7); c.fill(); c.fillRect(x + 12, y - 6, 8, 5); c.fillStyle = '#1a1214'; c.fillRect(x + 11, y - 14, 3, 4); c.fillRect(x + 18, y - 14, 3, 4); c.fillRect(x + 15, y - 9, 2, 3); c.fillStyle = '#e4dcc4'; c.fillRect(x + 4, y - 3, 10, 3); c.fillRect(x + 20, y - 3, 8, 3); }
+  }
+  drawShrine(c, pk) {
+    const g = this.g, x = pk.x, y = pk.y + 24, t = g.t;
+    if (pk.kind === '$') {
+      const S = SHRINES[pk.tid % 4], bob = Math.sin(t * 2.4 + x) * 2;
+      glow(c, x + 12, y - 26, 34, hexA(S.col, 0.4));
+      c.fillStyle = '#3a3a44'; c.fillRect(x + 2, y - 8, 20, 8); c.fillStyle = '#4e4e5a'; c.fillRect(x + 5, y - 30, 14, 22); c.fillStyle = '#6a6a78'; c.fillRect(x + 3, y - 34, 18, 5);
+      c.fillStyle = S.col; c.fillRect(x + 10, y - 26, 4, 12); c.fillRect(x + 7, y - 21, 10, 3);
+      c.beginPath(); c.arc(x + 12, y - 42 + bob, 4, 0, 7); c.fill();
+    } else if (pk.kind === '+') {
+      glow(c, x + 12, y - 10, 30, 'rgba(110,200,255,0.35)');
+      c.fillStyle = '#4e4e5a'; c.fillRect(x - 2, y - 10, 28, 10); c.fillStyle = '#2a8ad0'; c.fillRect(x + 1, y - 12, 22, 4); c.fillStyle = '#9ad8ff'; c.fillRect(x + 3 + Math.sin(t * 3) * 3, y - 12, 6, 2);
+      c.fillStyle = '#6a6a78'; c.fillRect(x + 9, y - 28, 6, 18); c.fillStyle = 'rgba(150,220,255,0.7)'; c.fillRect(x + 11, y - 24 + (t * 30) % 12, 2, 4);
+    } else {
+      glow(c, x + 12, y - 16, 22, 'rgba(255,214,120,0.22)');
+      c.fillStyle = '#4a4a54'; c.fillRect(x + 2, y - 32, 20, 32); c.fillStyle = '#5e5e6a'; c.fillRect(x + 4, y - 34, 16, 4);
+      c.fillStyle = 'rgba(255,214,120,0.75)'; for (let i = 0; i < 4; i++) c.fillRect(x + 6, y - 26 + i * 6, 12 - (i % 2) * 4, 2);
+    }
+  }
+  drawDeco(c, th, cx, cy) {
+    const g = this.g, R = this.cur.R, ds = R.deco; if (!ds) return;
+    const edge = th.edge, st = th.stoneD, st2 = th.stone, t = g.t;
+    for (const d of ds) {
+      const x = d.c * T, y = d.r * T, sx = x - cx;
+      if (sx < -140 || sx > VW + 140) continue;
+      const s = d.s, k = d.k, avail = Math.max(60, y - 2 * T - 6);
+      c.save(); c.globalAlpha = d.fixed ? 1 : 0.9;
+      if (k === 'pillar') { const H = Math.min(avail, 190), W = 22 * s; c.fillStyle = st; c.fillRect(x + 16 - W / 2, y - H, W, H); c.fillStyle = st2; c.fillRect(x + 16 - W / 2 - 4, y - H, W + 8, 8); c.fillRect(x + 16 - W / 2 - 4, y - 8, W + 8, 8); c.fillStyle = 'rgba(0,0,0,0.25)'; for (let i = 0; i < 3; i++) c.fillRect(x + 16 - W / 2 + 4 + i * 6, y - H + 10, 2, H - 18); c.fillStyle = edge; c.globalAlpha *= 0.4; c.fillRect(x + 16 - W / 2, y - H, 2, H); }
+      else if (k === 'banner') { const cl = ['#6a1c26', '#1c2a5a', '#2a5a3a', '#5a3a1c'][d.o % 4], H = 64 * s; c.fillStyle = '#3a2a1a'; c.fillRect(x + 4, 2 * T, 24, 3); c.fillStyle = cl; c.beginPath(); c.moveTo(x + 6, 2 * T + 3); c.lineTo(x + 26, 2 * T + 3); c.lineTo(x + 26, 2 * T + H); c.lineTo(x + 16, 2 * T + H - 10 + Math.sin(t * 1.5 + d.o) * 2); c.lineTo(x + 6, 2 * T + H); c.fill(); c.fillStyle = edge; c.fillRect(x + 14, 2 * T + 14, 4, 16); c.fillRect(x + 10, 2 * T + 20, 12, 3); }
+      else if (k === 'statue') { const H = 74 * s; c.fillStyle = st; c.fillRect(x + 6, y - 12, 20, 12); c.fillStyle = st2; c.fillRect(x + 4, y - 14, 24, 4); poly(c, [[x + 9, y - 14], [x + 11, y - H + 20], [x + 21, y - H + 20], [x + 23, y - 14]], st2); c.beginPath(); c.arc(x + 16, y - H + 14, 7, 0, 7); c.fill(); c.fillStyle = st; c.fillRect(x + 22, y - H + 16, 3, 40); c.fillStyle = edge; c.globalAlpha *= 0.5; c.fillRect(x + 23, y - H + 4, 1.5, 14); }
+      else if (k === 'window') { const H = Math.min(avail - 20, 130), wy = y - H - 10; c.fillStyle = '#0a0608'; c.beginPath(); c.moveTo(x + 2, wy + H); c.lineTo(x + 2, wy + 22); c.quadraticCurveTo(x + 16, wy - 8, x + 30, wy + 22); c.lineTo(x + 30, wy + H); c.fill(); c.fillStyle = hexA(edge, 0.18); c.fillRect(x + 4, wy + 18, 24, H - 20); c.fillStyle = hexA(edge, 0.5); c.fillRect(x + 15, wy + 8, 2, H); c.fillRect(x + 4, wy + H * 0.5, 24, 2); c.fillStyle = 'rgba(255,230,180,0.06)'; c.beginPath(); c.moveTo(x + 4, wy + H); c.lineTo(x + 28, wy + H); c.lineTo(x + 90, y); c.lineTo(x + 30, y); c.fill(); }
+      else if (k === 'brazier' || k === 'bonfire') { const big = k === 'bonfire', fl = Math.sin(t * 11 + d.o) * 2; if (!big) { c.fillStyle = '#2a2428'; c.fillRect(x + 14, y - 26, 4, 26); c.fillRect(x + 8, y - 4, 16, 4); c.fillStyle = '#4a4248'; c.fillRect(x + 8, y - 30, 16, 6); } else { c.fillStyle = '#4a2e1a'; c.fillRect(x + 6, y - 6, 22, 6); c.fillRect(x + 10, y - 10, 14, 5); } glow(c, x + 16, y - (big ? 14 : 36), big ? 70 : 52, 'rgba(255,150,60,0.4)'); c.globalAlpha = 1; poly(c, [[x + 9, y - (big ? 8 : 30)], [x + 16 + fl, y - (big ? 32 : 50)], [x + 23, y - (big ? 8 : 30)]], '#ff9a3a'); poly(c, [[x + 12, y - (big ? 8 : 30)], [x + 16, y - (big ? 24 : 44) - fl], [x + 20, y - (big ? 8 : 30)]], '#fff0a0'); }
+      else if (k === 'chain') { const L = (40 + (d.o % 5) * 14); c.strokeStyle = '#4a4a52'; c.lineWidth = 2; for (let i = 0; i < L; i += 8) { c.beginPath(); c.ellipse(x + 16, 2 * T + i + 4, 3, 5, 0, 0, 7); c.stroke(); } c.fillStyle = '#4a4a52'; c.beginPath(); c.arc(x + 16, 2 * T + L + 4, 4, 0, 7); c.fill(); }
+      else if (k === 'coffin') { poly(c, [[x + 10, y], [x + 7, y - 40], [x + 12, y - 60], [x + 20, y - 60], [x + 25, y - 40], [x + 22, y]], '#3a2a1c'); c.fillStyle = '#6a4a2a'; c.fillRect(x + 14, y - 48, 4, 24); c.fillRect(x + 11, y - 42, 10, 3); }
+      else if (k === 'skulls') { for (let i = 0; i < 5; i++) { c.fillStyle = '#b8b09a'; c.beginPath(); c.arc(x + 6 + i * 5, y - 5 - (i % 2) * 6, 5, 0, 7); c.fill(); c.fillStyle = '#1a1214'; c.fillRect(x + 3 + i * 5, y - 7 - (i % 2) * 6, 2, 2); c.fillRect(x + 7 + i * 5, y - 7 - (i % 2) * 6, 2, 2); } }
+      else if (k === 'web') { c.strokeStyle = 'rgba(230,230,240,0.35)'; c.lineWidth = 1; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(x, 2 * T); c.lineTo(x + 8 + i * 8, 2 * T + 44 - i * 4); c.stroke(); } for (let j = 1; j < 4; j++) { c.beginPath(); c.moveTo(x, 2 * T + j * 12); c.quadraticCurveTo(x + j * 8, 2 * T + j * 12 + 10, x + 8 + j * 8, 2 * T + 44 - j * 4 + 2); c.stroke(); } }
+      else if (k === 'shelf') { const H = Math.min(avail, 120); c.fillStyle = '#2a1a10'; c.fillRect(x, y - H, 32, H); for (let r2 = 0; r2 < Math.floor(H / 20); r2++) { c.fillStyle = '#4a3220'; c.fillRect(x, y - H + 18 + r2 * 20, 32, 3); for (let i = 0; i < 6; i++) { c.fillStyle = ['#6a1c26', '#1c3a5a', '#5a4a1c', '#2a5a3a'][(i + r2 + d.o) % 4]; c.fillRect(x + 2 + i * 5, y - H + 4 + r2 * 20, 4, 14); } } }
+      else if (k === 'lantern') { const ly = 2 * T + 30 + (d.o % 4) * 14; c.strokeStyle = '#3a2a1a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x + 16, 2 * T); c.lineTo(x + 16, ly); c.stroke(); glow(c, x + 16, ly + 10, 40, 'rgba(255,170,70,0.35)'); c.globalAlpha = 1; c.fillStyle = '#c8402a'; c.fillRect(x + 10, ly, 12, 18); c.fillStyle = '#ffd08a'; c.fillRect(x + 12, ly + 3, 8, 12); c.fillStyle = '#2a1a10'; c.fillRect(x + 9, ly - 2, 14, 3); c.fillRect(x + 9, ly + 17, 14, 3); }
+      else if (k === 'torii') { const H = Math.min(avail, 120); c.fillStyle = '#7a1c20'; c.fillRect(x - 4, y - H, 6, H); c.fillRect(x + 30, y - H, 6, H); c.fillRect(x - 12, y - H - 6, 56, 7); c.fillRect(x - 4, y - H + 16, 40, 5); c.fillStyle = '#2a0e10'; c.fillRect(x - 14, y - H - 10, 60, 5); }
+      else if (k === 'mist') { for (let i = 0; i < 3; i++) { c.fillStyle = 'rgba(190,170,230,0.07)'; c.beginPath(); c.ellipse(x + 16 + Math.sin(t * 0.6 + i + d.o) * 18, y - 8 - i * 6, 60, 10, 0, 0, 7); c.fill(); } }
+      else if (k === 'deadtree') { const H = 80 * s; c.strokeStyle = '#1a1612'; c.lineWidth = 5; c.beginPath(); c.moveTo(x + 16, y); c.quadraticCurveTo(x + 12, y - H * 0.5, x + 18, y - H); c.stroke(); c.lineWidth = 3; for (const [ax, ay] of [[-22, -0.7], [20, -0.6], [-16, -0.9], [16, -0.85]]) { c.beginPath(); c.moveTo(x + 15, y + ay * H * 0.8); c.lineTo(x + 16 + ax, y + ay * H * 0.8 - 16); c.stroke(); } }
+      else if (k === 'icicle') { for (let i = 0; i < 4; i++) poly(c, [[x + 2 + i * 8, 2 * T], [x + 10 + i * 8, 2 * T], [x + 6 + i * 8, 2 * T + 22 + ((i * 13 + d.o) % 5) * 7]], 'rgba(200,236,248,0.55)'); }
+      else if (k === 'stoneman') { c.fillStyle = st2; for (const [ox, oy, rw, rh] of [[6, 0, 20, 8], [9, -8, 14, 7], [12, -15, 8, 6]]) { c.beginPath(); c.ellipse(x + ox + rw / 2, y + oy - rh / 2, rw / 2, rh / 2, 0, 0, 7); c.fill(); } }
+      else if (k === 'crystal') { const cc2 = edge; glow(c, x + 16, y - 22, 40, hexA(cc2, 0.2)); c.globalAlpha = 0.9; for (const [ox, hh, ww] of [[4, 28, 8], [12, 44, 10], [22, 24, 8]]) poly(c, [[x + ox, y], [x + ox + ww / 2, y - hh], [x + ox + ww, y]], hexA(cc2, 0.55)); c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(x + 15, y - 40, 2, 22); }
+      else if (k === 'bones') { c.strokeStyle = '#b8b09a'; c.lineWidth = 3; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(x + 8 + i * 4, y - 4); c.quadraticCurveTo(x + 4 + i * 5, y - 30 + i, x + 24, y - 6 - i * 2); c.stroke(); } c.fillStyle = '#b8b09a'; c.fillRect(x + 6, y - 5, 22, 4); }
+      else if (k === 'obelisk') { const H = Math.min(avail, 150) * s; poly(c, [[x + 6, y], [x + 10, y - H], [x + 16, y - H - 12], [x + 22, y - H], [x + 26, y]], st2); c.fillStyle = edge; c.globalAlpha *= 0.55; for (let i = 0; i < 5; i++) c.fillRect(x + 12, y - H + 12 + i * 14, 8, 3); }
+      else if (k === 'palm') { c.strokeStyle = '#4a3418'; c.lineWidth = 6; c.beginPath(); c.moveTo(x + 14, y); c.quadraticCurveTo(x + 22, y - 40, x + 16, y - 80); c.stroke(); c.fillStyle = '#2a5a2a'; for (let i = 0; i < 5; i++) { const a = -2.6 + i * 0.5 + Math.sin(t * 1.4 + i) * 0.06; poly(c, [[x + 16, y - 80], [x + 16 + Math.cos(a) * 38, y - 80 + Math.sin(a) * 38 + 8], [x + 16 + Math.cos(a) * 30, y - 80 + Math.sin(a) * 30 + 16]], '#2a5a2a'); } }
+      else if (k === 'pot') { poly(c, [[x + 10, y], [x + 6, y - 18], [x + 12, y - 28], [x + 20, y - 28], [x + 26, y - 18], [x + 22, y]], '#9a6a3a'); c.fillStyle = '#c89a5a'; c.fillRect(x + 8, y - 18, 16, 3); }
+      else if (k === 'rock') { c.fillStyle = st2; c.beginPath(); c.ellipse(x + 16, y - 8, 20 * s, 12 * s, 0, Math.PI, 0); c.fill(); c.fillStyle = st; c.beginPath(); c.ellipse(x + 24, y - 5, 12 * s, 7 * s, 0, Math.PI, 0); c.fill(); }
+      else if (k === 'sarcoph') { poly(c, [[x + 6, y], [x + 8, y - 54], [x + 16, y - 62], [x + 24, y - 54], [x + 26, y]], '#6a5a2a'); c.fillStyle = '#e0bb5a'; c.fillRect(x + 12, y - 48, 8, 3); c.fillRect(x + 14, y - 40, 4, 24); c.beginPath(); c.arc(x + 16, y - 54, 5, 0, 7); c.fill(); }
+      else if (k === 'hiero') { const H = Math.min(avail, 100); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(x, y - H, 32, H); c.fillStyle = hexA(edge, 0.55); for (let r2 = 0; r2 < 6; r2++) for (let i = 0; i < 3; i++) c.fillRect(x + 4 + i * 9, y - H + 8 + r2 * 14, 5, (r2 + i) % 2 ? 7 : 3); }
+      else if (k === 'dragon') { c.fillStyle = '#6a4a1a'; c.fillRect(x + 6, y - 14, 20, 14); poly(c, [[x + 8, y - 14], [x + 10, y - 50], [x + 26, y - 54], [x + 24, y - 44], [x + 16, y - 40], [x + 16, y - 14]], '#c89a38'); c.fillStyle = '#ff4a2a'; c.fillRect(x + 20, y - 49, 3, 3); }
+      c.restore();
+    }
+  }
+  drawAmbient(c, th, cx, cy) {
+    const g = this.g, id = this.cur.R.theme, t = g.t;
+    if (th.snow) return;
+    const warm = ['gothic', 'drake', 'palace', 'sanctum', 'pit', 'yokai', 'tomb'].indexOf(id) >= 0, sand = id === 'desert', cool = id === 'crypt' || id === 'ice';
+    const col = warm ? [255, 150, 70] : sand ? [236, 206, 150] : cool ? [150, 230, 220] : [255, 226, 150];
+    for (let i = 0; i < 28; i++) {
+      const sp = 8 + (i % 5) * 5, x = cx + (((i * 97 + t * (sand ? 40 + sp : 6) + Math.sin(t * 0.7 + i) * 20) % VW) + VW) % VW;
+      const y = cy + (((i * 53 - t * (sand ? -4 : sp * (warm ? 1.4 : 0.6))) % VH) + VH) % VH;
+      const a = 0.25 + 0.35 * Math.sin(t * 2 + i * 1.7); if (a <= 0.02) continue;
+      c.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a + ')'; c.fillRect(Math.round(x), Math.round(y), (i % 3) ? 2 : 3, 2);
+    }
+  }
+
   drawTiles(c, th, cx, cy) {
     const g = this.g, cur = this.cur, R = cur.R;
     const c0 = Math.max(0, Math.floor(cx / T)), c1 = Math.min(R.w - 1, c0 + 26), r0 = Math.max(0, Math.floor(cy / T)), r1 = Math.min(R.h - 1, r0 + 15);
@@ -5537,6 +6224,14 @@ class Component extends DCLogic {
         c.fillStyle = 'rgba(130,175,210,0.5)'; c.fillRect(x, y + 7, T, 2);
       } else if (ch === '=') {
         this.rect(x, y, T, 6, th.edge); this.rect(x, y + 6, T, 3, th.stoneD);
+      } else if (ch === '~') {
+        const cr = this.cur.crum && this.cur.crum[q + ':' + r], sh2 = cr ? Math.sin(g.t * 70) * 1.5 : 0;
+        c.fillStyle = th.stoneD; c.fillRect(x + sh2, y + 3, T, 7); c.fillStyle = th.stone; c.fillRect(x + sh2, y, T, 5); c.fillStyle = th.edge; c.fillRect(x + sh2, y, T, 1.5);
+        c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x + 8 + sh2, y); c.lineTo(x + 12 + sh2, y + 5); c.lineTo(x + 9 + sh2, y + 10); c.moveTo(x + 22 + sh2, y); c.lineTo(x + 19 + sh2, y + 6); c.stroke();
+      } else if (ch === '|') {
+        c.fillStyle = 'rgba(8,4,4,0.8)'; c.fillRect(x, y, T, T); c.fillStyle = '#7a7a84';
+        for (let k2 = 0; k2 < 3; k2++) c.fillRect(x + 4 + k2 * 10, y, 4, T);
+        c.fillStyle = '#4a4a52'; c.fillRect(x, y + 6, T, 3); c.fillRect(x, y + 22, T, 3); c.fillStyle = '#c04040'; c.globalAlpha = 0.5 + 0.3 * Math.sin(g.t * 5); c.fillRect(x + 14, y + 14, 4, 4); c.globalAlpha = 1;
       } else if (ch === '^') {
         for (let k = 0; k < 3; k++) this.tri(x + k * 11, y + T, x + k * 11 + 5.5, y + T - 18, x + k * 11 + 11, y + T, '#b8b0a8');
       } else if (ch === 'r') {
@@ -5600,11 +6295,15 @@ class Component extends DCLogic {
     if (th.snow) this.fall(c, th, cx);
     const sh = g.shake > 0 ? (Math.random() - 0.5) * 8 : 0;
     c.save(); c.translate(-cx + sh + (g.kx || 0), -cy + (g.ky || 0));
+    this.drawDeco(c, th, cx, cy);
     this.drawTiles(c, th, cx, cy);
     this.drawPassages(c, th);
+    this.drawDirector(c, th);
+    this.drawAmbient(c, th, cx, cy);
     // candles
     for (const cd of cur.candles) {
       if (!cd.alive) continue;
+      if (cd.style) { this.drawProp(c, cd); continue; }
       const x = cd.c * T, y = cd.r * T, fl = Math.sin(g.t * 9 + cd.c) * 1.5;
       if (th.snow) {
         const gl2 = c.createRadialGradient(x + 16, y + 14, 2, x + 16, y + 14, 56); gl2.addColorStop(0, 'rgba(255,190,110,0.45)'); gl2.addColorStop(1, 'rgba(255,190,110,0)'); c.fillStyle = gl2; c.fillRect(x - 40, y - 40, 112, 112);
@@ -5620,6 +6319,7 @@ class Component extends DCLogic {
     }
     // pickups
     for (const pk of cur.pickups) {
+      if (pk.kind === '$' || pk.kind === '+' || pk.kind === '?') { this.drawShrine(c, pk); continue; }
       const bob = Math.sin(g.t * 3 + pk.x) * 3, x = pk.x, y = pk.y;
       if (pk.kind === 'C') {
         this.rect(x - 2, y + 6, 28, 18, '#8a5a2b');
@@ -6345,14 +7045,260 @@ class Component extends DCLogic {
     }
     this.drawEnemyRaw(c, e, false);
   }
+  artGen(c, e, t) {
+    const S = GEN[e.t]; if (!S) return;
+    const sc = e.sc || 1, W = e.w / sc, H = e.h / sc, F = S.f, has = k => F.indexOf(k) >= 0;
+    const A = S.c, B = S.c2, C = S.c3, EY = C, OL = 'rgba(12,7,9,0.9)';
+    const hx = s => [1, 3, 5].map(i => parseInt(s.substr(i, 2), 16));
+    const mix = (a, b, k) => { const p = hx(a), q = hx(b); return 'rgb(' + p.map((v, i) => Math.round(v + (q[i] - v) * k)).join(',') + ')'; };
+    const dk = (a, k) => mix(a, '#000000', k), lt = (a, k) => mix(a, '#ffffff', k);
+    const ell = (x, y, rx, ry, col, rot, noOl) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, Math.max(0.3, rx), Math.max(0.3, ry), rot || 0, 0, 7); c.fill(); if (!noOl) { c.strokeStyle = OL; c.lineWidth = 0.9; c.stroke(); } };
+    const ln = (x1, y1, x2, y2, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+    const pg = (p, col, ol) => { c.fillStyle = col; c.beginPath(); c.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) c.lineTo(p[i], p[i + 1]); c.closePath(); c.fill(); if (ol) { c.strokeStyle = OL; c.lineWidth = 0.9; c.stroke(); } };
+    const eyeAt = (x, y, r, col) => { c.fillStyle = col || EY; c.beginPath(); c.arc(x, y, Math.max(0.8, r), 0, 7); c.fill(); c.fillStyle = '#100608'; c.beginPath(); c.arc(x + r * 0.25, y, Math.max(0.4, r * 0.45), 0, 7); c.fill(); };
+    const ph = t * (3.5 + (e.spd || 40) / 22), sw = Math.sin(ph), cw = Math.cos(ph);
+    c.lineJoin = 'round';
+    const p = S.p;
+    if (p === 'hum') {
+      const k = S.k, bw = W * 0.46 * k, hy = -H * 0.38, ty = -H * 0.76, hr = Math.min(W * 0.3, H * 0.15 * S.hs * (k > 1.2 ? 1.1 : 1));
+      const lw = Math.max(3, bw * 0.34), robe = has('robe'), arm = has('armor') || has('golem');
+      const skin = A, cloth = B, lc = arm ? B : dk(A, 0.18), lo = sw * W * 0.12;
+      if (has('tail')) { c.strokeStyle = A; c.lineWidth = Math.max(3, W * 0.1); c.lineCap = 'round'; c.beginPath(); c.moveTo(-bw * 0.3, hy); c.quadraticCurveTo(-W * 0.55, hy + H * 0.06 + sw * 3, -W * 0.64, hy + H * 0.22 + cw * 3); c.stroke(); }
+      if (has('cape')) pg([-bw * 0.3, ty + 2, -bw * 1.0 - sw * 3, hy + H * 0.26, -bw * 0.25, -3, bw * 0.1, hy], dk(B, 0.25), 1);
+      if (has('fins')) { pg([-bw * 0.2, ty, -bw * 0.9, ty - H * 0.06, -bw * 0.45, ty + H * 0.12], lt(B, 0.1), 1); }
+      if (!robe) {
+        ln(-bw * 0.22, hy, -bw * 0.22 - lo, -2, lw, dk(lc, 0.25)); ell(-bw * 0.22 - lo + 3, -2, lw * 0.85, 2.6, dk(lc, 0.3), 0, true);
+        ln(bw * 0.22, hy, bw * 0.22 + lo, -2, lw, lc); ell(bw * 0.22 + lo + 3, -2, lw * 0.85, 2.6, dk(lc, 0.1), 0, true);
+      }
+      const ax = bw * 0.38, ay = ty + H * 0.08;
+      ln(-ax, ay, -ax - sw * 4, ay + H * 0.24, lw * 0.8, dk(skin, 0.25));
+      // torso
+      if (robe) pg([-bw * 0.5, ty, bw * 0.5, ty, bw * 0.75, -2, -bw * 0.75, -2], cloth, 1);
+      else if (has('golem')) { for (const [dx, dy, ww, hh] of [[-0.55, 0, 1.1, 0.5], [-0.45, 0.5, 0.9, 0.5]]) { c.fillStyle = A; c.fillRect(bw * dx, ty + (hy - ty) * dy, bw * ww, (hy - ty) * hh); c.strokeStyle = OL; c.strokeRect(bw * dx, ty + (hy - ty) * dy, bw * ww, (hy - ty) * hh); } }
+      else ell(0, (hy + ty) / 2, bw * 0.6, (hy - ty) / 2 + H * 0.05, cloth);
+      if (has('belly')) ell(bw * 0.18, hy - H * 0.07, bw * 0.5, H * 0.14, A);
+      if (has('stitches')) { for (let i = 0; i < 4; i++) ln(-bw * 0.3 + i * bw * 0.2, ty + H * 0.1, -bw * 0.3 + i * bw * 0.2, ty + H * 0.2, 1, '#2a1818'); }
+      if (has('bones')) { for (let i = 0; i < 3; i++) ln(-bw * 0.3, ty + H * (0.08 + i * 0.07), bw * 0.3, ty + H * (0.08 + i * 0.07), 1.4, A); }
+      if (has('wounds')) { ell(bw * 0.1, ty + H * 0.1, 3, 2.2, '#5a1a1a', 0, true); ell(-bw * 0.2, hy - H * 0.06, 2.4, 1.8, '#5a1a1a', 0, true); }
+      if (has('rune')) { c.strokeStyle = C; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-bw * 0.15, ty + H * 0.07); c.lineTo(0, ty + H * 0.17); c.lineTo(bw * 0.15, ty + H * 0.07); c.stroke(); glow(c, 0, ty + H * 0.13, 7, hexA(C, 0.4)); }
+      if (arm) { c.strokeStyle = lt(B, 0.35); c.lineWidth = 1.2; c.beginPath(); c.moveTo(-bw * 0.5, hy - 3); c.lineTo(bw * 0.5, hy - 3); c.stroke(); }
+      if (has('fur')) { for (let i = 0; i < 5; i++) pg([-bw * 0.5, ty + H * 0.04 + i * H * 0.07, -bw * 0.85, ty + H * 0.1 + i * H * 0.07, -bw * 0.45, ty + H * 0.11 + i * H * 0.07], dk(A, 0.2)); }
+      // head
+      const hxc = bw * 0.14, hyc = ty - hr * 0.55;
+      const head = (ox, oy, sz) => {
+        const R = hr * sz, X = hxc + ox, Y = hyc + oy;
+        if (has('fishhead')) ell(X + R * 0.15, Y, R * 1.15, R * 0.85, A); else ell(X, Y, R, R * 0.95, skin);
+        if (has('ears')) { pg([X - R * 0.5, Y - R * 0.3, X - R * 1.7, Y - R * 0.7, X - R * 0.7, Y + R * 0.2], skin, 1); }
+        if (has('horn')) { pg([X - R * 0.2, Y - R * 0.7, X - R * 0.9, Y - R * 1.7, X + R * 0.1, Y - R * 0.9], '#e8dcc0', 1); pg([X + R * 0.4, Y - R * 0.7, X + R * 1.2, Y - R * 1.6, X + R * 0.7, Y - R * 0.6], '#e8dcc0', 1); }
+        if (has('snout')) ell(X + R * 0.95, Y + R * 0.25, R * 0.6, R * 0.38, lt(skin, 0.1));
+        if (has('beak')) pg([X + R * 0.6, Y - R * 0.25, X + R * 1.6, Y + R * 0.2, X + R * 0.6, Y + R * 0.55], '#e8b838', 1);
+        if (has('nose')) ell(X + R * 1.05, Y + R * 0.1, R * 0.38, R * 0.3, lt(skin, 0.1));
+        if (has('mandible')) { ln(X + R * 0.6, Y + R * 0.4, X + R * 1.5, Y + R * 0.1, 2.4, '#d8cdb0'); ln(X + R * 0.5, Y + R * 0.6, X + R * 1.4, Y + R * 0.8, 2.4, '#d8cdb0'); }
+        if (has('tusk')) { pg([X + R * 0.3, Y + R * 0.3, X + R * 0.55, Y - R * 0.5, X + R * 0.7, Y + R * 0.3], '#f0e8d0', 1); }
+        if (has('fangs')) { pg([X + R * 0.2, Y + R * 0.45, X + R * 0.35, Y + R * 0.95, X + R * 0.5, Y + R * 0.45], '#f4f0e0'); }
+        if (has('hair')) { for (let i = 0; i < 4; i++) ln(X - R * 0.4 + i * R * 0.25, Y - R * 0.8, X - R * 1.2 - i * R * 0.2 - sw * 2, Y + R * (0.6 + i * 0.4), 2, C === '#e8e8ff' ? '#e8e8ff' : lt(B, 0.4)); }
+        if (has('helm')) { c.fillStyle = arm ? B : dk(B, 0.1); c.beginPath(); c.arc(X, Y - R * 0.05, R * 1.08, Math.PI, 0); c.lineTo(X + R * 1.08, Y + R * 0.3); c.lineTo(X - R * 1.08, Y + R * 0.3); c.closePath(); c.fill(); c.strokeStyle = OL; c.lineWidth = 0.9; c.stroke(); ln(X + R * 0.1, Y - R * 0.1, X + R * 0.9, Y - R * 0.1, 1.2, '#0a0608'); }
+        if (has('empty')) ell(X + R * 0.5, Y, R * 0.22, R * 0.2, EY, 0, true);
+        else if (has('foureyes')) { eyeAt(X + R * 0.35, Y - R * 0.25, R * 0.16); eyeAt(X + R * 0.7, Y - R * 0.25, R * 0.16); eyeAt(X + R * 0.35, Y + R * 0.1, R * 0.14); eyeAt(X + R * 0.7, Y + R * 0.1, R * 0.14); }
+        else { eyeAt(X + R * 0.5, Y - R * 0.12, R * 0.22); if (has('fishhead')) eyeAt(X - R * 0.05, Y - R * 0.12, R * 0.22); }
+        if (!has('fangs') && !has('beak') && !has('tusk') && !has('mandible')) ln(X + R * 0.3, Y + R * 0.5, X + R * 0.8, Y + R * 0.45, 1, '#1a0a0c');
+      };
+      if (has('twohead')) { head(-hr * 0.9, hr * 0.15, 0.85); head(hr * 0.7, -hr * 0.1, 0.85); } else head(0, 0, 1);
+      // front arm + weapon
+      const sx = ax, sy = ay, hxp = bw * 0.5 + W * 0.17, hyp = ty + H * 0.24 + cw * 1.5, reach = has('reach');
+      ln(sx, sy, reach ? sx + W * 0.4 : hxp, reach ? sy + H * 0.04 : hyp, lw * 0.85, skin);
+      ell(reach ? sx + W * 0.4 : hxp, reach ? sy + H * 0.04 : hyp, lw * 0.5, lw * 0.5, skin, 0, true);
+      if (has('claws') && !reach) { for (let i = -1; i <= 1; i++) ln(hxp, hyp, hxp + 5, hyp + i * 3, 1.2, '#f0e8d0'); }
+      const wx = hxp, wy = hyp;
+      if (has('club')) { ln(wx - 2, wy + 4, wx + W * 0.16, wy - H * 0.34, 4, '#7a5a3a'); ell(wx + W * 0.17, wy - H * 0.36, 5, 7, '#6a4a2a', 0.5); }
+      else if (has('sword')) { ln(wx - 1, wy + 3, wx + W * 0.12, wy - H * 0.34, 2.6, '#d8dde8'); ln(wx - 4, wy - 2, wx + 4, wy - 4, 2, '#8a7a4a'); }
+      else if (has('spear')) { ln(wx - W * 0.12, wy + H * 0.22, wx + W * 0.2, wy - H * 0.5, 1.8, '#7a5a3a'); pg([wx + W * 0.2, wy - H * 0.5, wx + W * 0.15, wy - H * 0.42, wx + W * 0.25, wy - H * 0.44], '#d8dde8'); }
+      else if (has('axe')) { ln(wx - 2, wy + 5, wx + W * 0.12, wy - H * 0.32, 2.4, '#7a5a3a'); pg([wx + W * 0.1, wy - H * 0.38, wx + W * 0.26, wy - H * 0.42, wx + W * 0.2, wy - H * 0.22, wx + W * 0.1, wy - H * 0.26], '#aab2bc', 1); }
+      else if (has('bow')) { c.strokeStyle = '#7a5a3a'; c.lineWidth = 2; c.beginPath(); c.arc(wx + 2, wy - H * 0.04, H * 0.26, -1.2, 1.2); c.stroke(); const bx = wx + 2 + Math.cos(1.2) * H * 0.26; ln(bx, wy - H * 0.04 - Math.sin(1.2) * H * 0.26, bx, wy - H * 0.04 + Math.sin(1.2) * H * 0.26, 0.8, '#ddd'); }
+      if (has('shield')) { ell(bw * 0.5 + 1, ty + H * 0.2, W * 0.14, H * 0.17, B); ell(bw * 0.5 + 1, ty + H * 0.2, W * 0.05, H * 0.07, lt(B, 0.4)); }
+    } else if (p === 'quad') {
+      const by = -H * 0.52, bx = -W * 0.05, brx = W * 0.34, bry = H * 0.26, lo = sw * W * 0.1, lw = Math.max(3, H * 0.13);
+      if (has('tail') || has('longtail') || has('tailfan')) { const lt2 = has('longtail') ? 0.75 : 0.55; c.strokeStyle = A; c.lineWidth = Math.max(3, H * 0.12); c.lineCap = 'round'; c.beginPath(); c.moveTo(bx - brx * 0.8, by); c.quadraticCurveTo(-W * lt2 * 0.8, by - H * 0.2 + sw * 3, -W * lt2, by + H * 0.1 + cw * 3); c.stroke(); if (has('tailfan')) { for (let i = -1; i <= 1; i++) ln(-W * lt2, by + H * 0.1 + cw * 3, -W * lt2 - 5, by + H * 0.1 + i * 7 + cw * 3, 2.5, B); } }
+      if (has('scorptail')) { c.strokeStyle = A; c.lineWidth = 4; c.beginPath(); c.moveTo(bx - brx * 0.8, by); c.quadraticCurveTo(-W * 0.75, by - H * 0.1, -W * 0.5, by - H * 0.65 + sw * 2); c.stroke(); pg([-W * 0.5, by - H * 0.65, -W * 0.44, by - H * 0.82, -W * 0.56, by - H * 0.7], '#e8dcc0', 1); }
+      const farC = dk(A, 0.3), nearC = A;
+      for (const [x0, sgn] of [[-brx * 0.6, 1], [brx * 0.6, -1]]) ln(bx + x0, by + bry * 0.4, bx + x0 + sgn * lo, -1, lw, farC);
+      ell(bx, by, brx, bry, A);
+      ell(bx, by + bry * 0.4, brx * 0.78, bry * 0.5, lt(A, 0.12), 0, true);
+      if (has('flame')) for (let i = 0; i < 5; i++) { const fx = bx - brx * 0.6 + i * brx * 0.3, fh = 7 + Math.sin(t * 9 + i * 2) * 3; pg([fx - 3, by - bry * 0.85, fx, by - bry * 0.85 - fh, fx + 3, by - bry * 0.85], i % 2 ? B : C); }
+      if (has('spikes')) for (let i = 0; i < 6; i++) { const fx = bx - brx * 0.7 + i * brx * 0.28; pg([fx - 2.5, by - bry * 0.9, fx, by - bry * 1.3, fx + 2.5, by - bry * 0.9], dk(A, 0.35)); }
+      if (has('mane')) { ell(bx + brx * 0.78, by - bry * 0.2, W * 0.15, bry * 1.05, B); }
+      if (has('tentacles')) { for (const o of [-1, 1]) { c.strokeStyle = C; c.lineWidth = 2; c.beginPath(); c.moveTo(bx + brx * 0.3, by - bry * 0.6); c.bezierCurveTo(bx + brx * 0.1, by - bry * 1.4, bx - brx * 0.3 * o, by - bry * 1.2 + Math.sin(t * 5 + o) * 3, bx - brx * 0.5 + o * 5, by - bry * 1.5); c.stroke(); } }
+      if (has('sparkle')) for (let i = 0; i < 4; i++) { const a = t * 3 + i * 1.6; c.fillStyle = 'rgba(255,255,255,' + (0.5 + 0.5 * Math.sin(a * 2)) + ')'; c.fillRect(bx + Math.cos(a) * brx * 1.1, by + Math.sin(a * 1.3) * bry * 1.4, 2, 2); }
+      for (const [x0, sgn] of [[-brx * 0.35, -1], [brx * 0.8, 1]]) ln(bx + x0, by + bry * 0.4, bx + x0 + sgn * lo, -1, lw, nearC);
+      const doHead = (ox, oy, s) => {
+        const hxc = bx + brx * 0.95 + ox, hyc = by - bry * 0.45 + oy, hrx = W * 0.14 * s, hry = H * 0.19 * s;
+        ell(hxc, hyc, hrx, hry, A);
+        const sn = has('snout') || has('longtail') || has('fangs');
+        if (sn) ell(hxc + hrx * 0.85, hyc + hry * 0.25, hrx * 0.8, hry * 0.5, lt(A, 0.1));
+        if (has('ears')) pg([hxc - hrx * 0.5, hyc - hry * 0.6, hxc - hrx * 0.4, hyc - hry * 1.9, hxc + hrx * 0.2, hyc - hry * 0.7], dk(A, 0.15), 1);
+        if (has('horn')) pg([hxc, hyc - hry * 0.8, hxc - hrx * 0.5, hyc - hry * 2, hxc + hrx * 0.4, hyc - hry * 0.8], '#e8dcc0', 1);
+        if (has('antenna')) { ln(hxc + hrx * 0.3, hyc - hry * 0.7, hxc + hrx * 1.2, hyc - hry * 2 + sw * 2, 1.2, B); ln(hxc, hyc - hry * 0.7, hxc + hrx * 0.5, hyc - hry * 2.1 - sw * 2, 1.2, B); }
+        if (has('fangs')) pg([hxc + hrx * 0.9, hyc + hry * 0.4, hxc + hrx * 1.1, hyc + hry * 1.1, hxc + hrx * 1.35, hyc + hry * 0.4], '#f4f0e0');
+        eyeAt(hxc + hrx * 0.35, hyc - hry * 0.2, Math.max(1.4, hry * 0.22), EY);
+      };
+      doHead(0, 0, 1); if (has('twohead')) doHead(-W * 0.08, -H * 0.1, 0.8);
+      for (const [x0, sgn] of [[-brx * 0.6, 1], [brx * 0.6, -1]]) { /* near-leg overlap already drawn */ }
+    } else if (p === 'fly') {
+      const wt = (F.match(/wings:(\w+)/) || [0, 'bat'])[1], by = -H * 0.5 + Math.sin(t * 4) * 2, brx = W * 0.24, bry = H * 0.26;
+      const fl = Math.sin(t * (wt === 'insect' ? 34 : wt === 'beetle' ? 30 : 12));
+      const wing = (dx, shade, tip) => {
+        const sx = dx, sy = by - bry * 0.5, ty2 = sy - H * (0.45 + 0.35 * fl), tx = sx - W * 0.2 + dx * 0.2 - fl * 3;
+        if (wt === 'bat') { pg([sx, sy, tx - W * 0.1, ty2, tx - W * 0.22, ty2 + H * 0.25, tx - W * 0.1, ty2 + H * 0.18, tx + W * 0.04, ty2 + H * 0.4, sx - W * 0.16, sy + H * 0.12], shade, 1); }
+        else if (wt === 'bird') { pg([sx, sy, tx - W * 0.14, ty2, tx - W * 0.3, ty2 + H * 0.12, tx - W * 0.22, ty2 + H * 0.35, sx - W * 0.2, sy + H * 0.2], shade, 1); for (let i = 0; i < 3; i++) ln(sx - W * 0.04 - i * W * 0.05, sy, tx - W * 0.2 - i * 3, ty2 + H * (0.12 + i * 0.1), 0.9, dk(shade, 0.3)); }
+        else if (wt === 'moth') { c.globalAlpha *= 0.92; ell(sx - W * 0.17, sy - H * (0.3 + 0.2 * fl), W * 0.22, H * 0.34, shade, -0.5 - fl * 0.3); ell(sx - W * 0.2, sy - H * (0.3 + 0.2 * fl), W * 0.06, H * 0.1, tip, -0.5 - fl * 0.3, true); c.globalAlpha /= 0.92; }
+        else { c.globalAlpha *= 0.5; ell(sx - W * 0.12, sy - H * (0.28 + 0.2 * fl), W * (wt === 'beetle' ? 0.14 : 0.2), H * 0.12, '#dff4ff', -0.6 - fl * 0.4); c.globalAlpha /= 0.5; }
+      };
+      const wc = wt === 'moth' ? lt(A, 0.1) : wt === 'bird' ? B : B;
+      wing(-brx * 0.2, dk(wc, 0.3), B); if (has('legs')) { ln(-brx * 0.3, by + bry * 0.7, -brx * 0.4, by + bry * 1.4, 3, dk(A, 0.2)); ln(brx * 0.4, by + bry * 0.7, brx * 0.5, by + bry * 1.4, 3, dk(A, 0.2)); }
+      if (has('tail') || has('stinger') || has('scorptail')) { c.strokeStyle = A; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(-brx * 0.8, by + bry * 0.2); c.quadraticCurveTo(-W * 0.45, by + H * 0.2 + sw * 2, -W * 0.5, by + (has('stinger') || has('scorptail') ? -H * 0.05 : H * 0.28)); c.stroke(); if (has('stinger') || has('scorptail')) pg([-W * 0.5, by - H * 0.05, -W * 0.46, by - H * 0.16, -W * 0.55, by - H * 0.09], '#e8dcc0', 1); }
+      if (has('talons')) { ln(-brx * 0.1, by + bry * 0.8, -brx * 0.1, by + bry * 1.5, 2, '#d8cdb0'); ln(brx * 0.3, by + bry * 0.8, brx * 0.3, by + bry * 1.5, 2, '#d8cdb0'); }
+      ell(0, by, brx, bry, A);
+      if (has('stripes')) for (let i = -2; i <= 1; i++) { const xx = i * brx * 0.32, hh = bry * Math.sqrt(Math.max(0, 1 - (xx / brx) ** 2)) * 0.92; ln(xx, by - hh, xx, by + hh, 3, B); }
+      if (wt === 'beetle') { ell(-brx * 0.15, by - bry * 0.1, brx * 0.85, bry * 0.9, B); ln(-brx * 0.15, by - bry * 0.95, -brx * 0.15, by + bry * 0.8, 1, '#1a0a0a'); }
+      if (has('glow')) glow(c, 0, by, W * 0.55, hexA(B, 0.35));
+      if (has('mane')) ell(brx * 0.7, by, W * 0.13, bry * 1.05, B);
+      ell(brx * 0.95, by - bry * 0.3, W * 0.13, H * 0.17, A);
+      const hx2 = brx * 0.95, hy2 = by - bry * 0.3, hr2 = H * 0.17;
+      if (has('beak')) pg([hx2 + W * 0.08, hy2 - hr2 * 0.4, hx2 + W * 0.24, hy2 + hr2 * 0.2, hx2 + W * 0.08, hy2 + hr2 * 0.5], '#e8b838', 1);
+      if (has('trunk')) ln(hx2 + W * 0.1, hy2 + 1, hx2 + W * 0.36, hy2 + 3 + sw, 2, '#c8a090');
+      if (has('fangs')) pg([hx2 + W * 0.05, hy2 + hr2 * 0.5, hx2 + W * 0.08, hy2 + hr2 * 1.2, hx2 + W * 0.12, hy2 + hr2 * 0.5], '#f4f0e0');
+      if (has('horn')) { pg([hx2, hy2 - hr2 * 0.8, hx2 - W * 0.06, hy2 - hr2 * 2, hx2 + W * 0.05, hy2 - hr2 * 0.8], '#e8dcc0', 1); pg([hx2 + W * 0.07, hy2 - hr2 * 0.8, hx2 + W * 0.02, hy2 - hr2 * 2, hx2 + W * 0.12, hy2 - hr2 * 0.8], '#e8dcc0', 1); }
+      if (has('comb')) pg([hx2 - 2, hy2 - hr2 * 0.9, hx2 + 2, hy2 - hr2 * 1.7, hx2 + 6, hy2 - hr2 * 0.9], '#d83a3a', 1);
+      if (has('antenna')) { ln(hx2 + 2, hy2 - hr2 * 0.8, hx2 + W * 0.18, hy2 - hr2 * 2, 1.2, B); ln(hx2 - 2, hy2 - hr2 * 0.8, hx2 + W * 0.08, hy2 - hr2 * 2.1, 1.2, B); }
+      if (has('hair')) for (let i = 0; i < 3; i++) ln(hx2 - 2, hy2 - hr2 * 0.6, hx2 - W * 0.2 - i * 3 - sw * 2, hy2 + hr2 * (0.4 + i * 0.5), 2, B);
+      eyeAt(hx2 + W * 0.06, hy2 - hr2 * 0.15, Math.max(1.5, hr2 * 0.28), EY);
+      wing(brx * 0.25, wc, B);
+      if (has('dust')) for (let i = 0; i < 4; i++) { c.fillStyle = 'rgba(200,190,150,' + (0.5 - ((t * 1.5 + i * 0.25) % 1) * 0.5) + ')'; c.fillRect(-brx - 6 + i * 3, by + bry + ((t * 12 + i * 5) % 14), 2, 2); }
+    } else if (p === 'ghost') {
+      const by = -H * 0.55 + Math.sin(t * 2.2) * 3, hr = W * 0.27;
+      c.save(); c.globalAlpha *= (A === '#2a2438' ? 0.92 : 0.8);
+      glow(c, 0, by, W * 0.8, hexA(B, 0.28));
+      if (has('hair')) for (let i = 0; i < 4; i++) ln(-hr * 0.3, by - hr * 0.8, -W * 0.5 - i * 3 - sw * 3, by + H * (0.1 + i * 0.1), 2.5, lt(B, 0.4));
+      c.fillStyle = A; c.beginPath(); c.arc(0, by - hr * 0.4, hr, Math.PI, 0);
+      c.lineTo(hr * 0.95, by + H * 0.3); for (let i = 4; i >= 0; i--) c.lineTo(-hr + i * hr * 0.5, by + H * 0.3 + (i % 2 ? 7 : 0) + Math.sin(t * 4 + i) * 3);
+      c.closePath(); c.fill(); c.strokeStyle = B; c.lineWidth = 1; c.stroke();
+      if (has('claws') || has('wail')) { ln(hr * 0.5, by, hr * 1.7, by + H * 0.1 + sw * 3, 3, A); for (let i = -1; i <= 1; i++) ln(hr * 1.7, by + H * 0.1 + sw * 3, hr * 1.7 + 6, by + H * 0.1 + sw * 3 + i * 3, 1.2, lt(A, 0.3)); }
+      eyeAt(hr * 0.3, by - hr * 0.5, hr * 0.2, C); eyeAt(hr * 0.75, by - hr * 0.5, hr * 0.18, C);
+      if (has('wail')) ell(hr * 0.5, by - hr * 0.05, hr * 0.2, hr * 0.28, '#0a0608', 0, true);
+      c.restore();
+      if (has('flail')) for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1; ell(Math.cos(a) * W * 0.6, by + Math.sin(a * 1.2) * H * 0.3, 3.5, 2.6, '#a89870', a); }
+    } else if (p === 'eye') {
+      const by = -H * 0.5 + Math.sin(t * 2) * 3, r = Math.min(W, H) * 0.46;
+      if (has('wisp')) {
+        glow(c, 0, by, r * 3, hexA(B, 0.35)); for (let i = 0; i < 5; i++) { const a = i / 5; c.fillStyle = hexA(B, 0.5 - a * 0.45); c.beginPath(); c.arc(-a * W * 0.7, by + Math.sin(t * 6 + i) * 3 + a * 4, r * (0.8 - a * 0.5), 0, 7); c.fill(); }
+        c.fillStyle = A; c.beginPath(); c.arc(0, by, r * 0.8, 0, 7); c.fill(); eyeAt(r * 0.3, by - 1, r * 0.2, '#103020');
+      } else if (has('spore')) {
+        for (let i = 0; i < 10; i++) { const a = i / 10 * 6.283 + t * 0.3; pg([Math.cos(a) * r * 0.9, by + Math.sin(a) * r * 0.9, Math.cos(a) * r * 1.35, by + Math.sin(a) * r * 1.35, Math.cos(a + 0.25) * r * 0.9, by + Math.sin(a + 0.25) * r * 0.9], B); }
+        ell(0, by, r, r, A); ell(r * 0.1, by, r * 0.55, r * 0.55, lt(A, 0.35), 0, true); eyeAt(r * 0.3, by, r * 0.22, C);
+        c.fillStyle = hexA(C, 0.3 + 0.2 * Math.sin(t * 5)); c.beginPath(); c.arc(-r, by - r * 1.1 - ((t * 10) % 12), 2.4, 0, 7); c.fill();
+      } else if (has('cap')) {
+        for (let i = 0; i < 6; i++) { const x0 = -r * 0.8 + i * r * 0.32; c.strokeStyle = B; c.lineWidth = 2.2; c.beginPath(); c.moveTo(x0, by + r * 0.3); c.quadraticCurveTo(x0 + Math.sin(t * 4 + i) * 4, by + r * 1.1, x0 - 2 + Math.cos(t * 3 + i) * 3, by + r * 1.7); c.stroke(); }
+        c.fillStyle = A; c.beginPath(); c.arc(0, by, r, Math.PI, 0); c.lineTo(r, by + r * 0.45); c.lineTo(-r, by + r * 0.45); c.closePath(); c.fill(); c.strokeStyle = OL; c.lineWidth = 0.9; c.stroke();
+        eyeAt(r * 0.25, by + r * 0.05, r * 0.16, C); eyeAt(r * 0.7, by + r * 0.05, r * 0.14, C);
+      } else {
+        if (has('stalks')) for (let i = 0; i < 5; i++) { const a = -0.4 - i * 0.55, sx = Math.cos(a) * r * 1.9 + Math.sin(t * 3 + i) * 3, sy = by + Math.sin(a) * r * 1.9; c.strokeStyle = A; c.lineWidth = 2.4; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.7, by + Math.sin(a) * r * 0.7); c.lineTo(sx, sy); c.stroke(); eyeAt(sx, sy, r * 0.22, C); }
+        ell(0, by, r, r, A);
+        ell(r * 0.25, by, r * 0.72, r * 0.66, S.c2); eyeAt(r * 0.45, by, r * 0.38, C);
+        c.fillStyle = A; c.beginPath(); c.ellipse(r * 0.25, by - r * 0.52, r * 0.78, r * 0.3, 0, Math.PI, 0); c.fill();
+      }
+    } else if (p === 'blob') {
+      const wob = Math.sin(t * 3) * 0.07, w2 = W * 0.5 * (1 + wob), h2 = H * (1 - wob);
+      if (has('chest')) {
+        const lid = 0.18 + 0.12 * Math.abs(Math.sin(t * 3));
+        c.fillStyle = B; c.fillRect(-w2, -h2 * 0.55, w2 * 2, h2 * 0.55); c.strokeStyle = OL; c.strokeRect(-w2, -h2 * 0.55, w2 * 2, h2 * 0.55);
+        ell(0, -h2 * 0.45, w2 * 0.85, h2 * 0.16, '#3a0a14', 0, true);
+        for (let i = 0; i < 6; i++) { const x0 = -w2 * 0.75 + i * w2 * 0.3; pg([x0, -h2 * 0.57, x0 + 3, -h2 * 0.4, x0 + 6, -h2 * 0.57], '#f4f0e0'); }
+        ell(w2 * 0.2, -h2 * 0.3, w2 * 0.35, h2 * 0.12 + sw, C, 0, true);
+        c.save(); c.translate(-w2, -h2 * 0.58); c.rotate(-lid * 1.6); c.fillStyle = A; c.fillRect(0, -h2 * 0.38, w2 * 2, h2 * 0.38); c.strokeStyle = OL; c.strokeRect(0, -h2 * 0.38, w2 * 2, h2 * 0.38); c.fillStyle = B; c.fillRect(w2 * 0.9, -h2 * 0.32, w2 * 0.2, h2 * 0.2); for (let i = 0; i < 6; i++) { const x0 = w2 * 0.15 + i * w2 * 0.3; pg([x0, -1, x0 + 3, 4, x0 + 6, -1], '#f4f0e0'); } c.restore();
+        eyeAt(w2 * 0.5, -h2 * 0.75, 2.4, '#ffdd55');
+      } else if (has('cube')) {
+        c.globalAlpha *= 0.82; c.fillStyle = A; c.beginPath(); c.roundRect(-w2, -h2, w2 * 2, h2, 5); c.fill(); c.strokeStyle = B; c.lineWidth = 1.6; c.stroke();
+        c.globalAlpha = Math.min(1, c.globalAlpha / 0.82);
+        c.strokeStyle = hexA(B, 0.5); c.lineWidth = 1; c.beginPath(); c.roundRect(-w2 * 0.7, -h2 * 0.8, w2 * 1.4, h2 * 0.6, 3); c.stroke();
+        for (let i = 0; i < 4; i++) { const ix = -w2 * 0.55 + i * w2 * 0.38, iy = -h2 * (0.3 + ((i * 37) % 5) / 12) + Math.sin(t * 1.5 + i) * 2; if (i % 2) ln(ix - 4, iy, ix + 4, iy + 2, 1.8, C); else { ell(ix, iy, 3, 3, '#e8c850', 0, true); } }
+        ell(-w2 * 0.05, -h2 * 0.5, 4, 3.4, '#cfd8c8', 0, true);
+      } else {
+        c.fillStyle = A; c.beginPath(); c.moveTo(-w2, 0); c.bezierCurveTo(-w2 * 1.05, -h2 * 1.5, w2 * 1.05, -h2 * 1.5, w2, 0); c.closePath(); c.fill(); c.strokeStyle = OL; c.lineWidth = 1; c.stroke();
+        ell(-w2 * 0.3, -h2 * 0.7, w2 * 0.35, h2 * 0.16, lt(A, 0.3), -0.3, true);
+        if (has('bubbles')) for (let i = 0; i < 4; i++) { c.strokeStyle = B; c.lineWidth = 1; c.beginPath(); c.arc(-w2 * 0.5 + i * w2 * 0.35, -h2 * (0.25 + (i % 2) * 0.25) - Math.sin(t * 2 + i) * 2, 2 + (i % 3), 0, 7); c.stroke(); }
+        if (has('mouths')) for (let i = 0; i < 5; i++) { const mx = -w2 * 0.7 + i * w2 * 0.35, my = -h2 * (0.2 + (i * 53 % 4) * 0.15); ell(mx, my, 3.2, 2.2 + Math.abs(Math.sin(t * 6 + i)) * 1.6, '#2a0a14', 0, true); eyeAt(mx + 3, my - 5, 1.8, C); }
+        else if (has('eyes')) { eyeAt(w2 * 0.15, -h2 * 0.55, h2 * 0.12, C); eyeAt(w2 * 0.55, -h2 * 0.5, h2 * 0.1, C); }
+      }
+    } else if (p === 'ser') {
+      const n = 14, pts = [];
+      for (let i = 0; i <= n; i++) { const u = i / n; pts.push([-W * 0.45 + u * W * 0.55 + Math.sin(u * 6 - ph * 0.5) * W * 0.08 * (1 - u * 0.6), -Math.pow(Math.max(0, u - 0.3) / 0.7, 1.15) * H * 0.62 - Math.abs(Math.sin(u * 6 - ph * 0.5)) * 3 * (1 - u)]); }
+      for (let i = 0; i < n; i++) { const u = i / n, r = W * (0.05 + 0.1 * Math.sin(Math.min(1, u * 1.4) * 1.5)) * (has('torso') ? 1.1 : 0.85) * (u > 0.8 && !has('torso') ? 0.75 : 1); ell(pts[i][0], pts[i][1] - r * 0.4, r, r, i % 2 ? A : lt(A, 0.1), 0, true); if (i % 3 === 0) ell(pts[i][0], pts[i][1] - r * 0.4, r * 0.4, r * 0.4, B, 0, true); }
+      const [hx0, hy0] = pts[n - 1];
+      if (has('torso')) {
+        const ty = hy0 - H * 0.12, bw = W * 0.26;
+        ln(-bw * 0.5, ty - H * 0.1, -bw * 0.9 - sw * 2, ty + H * 0.12, 3.4, dk(A, 0.2));
+        ell(hx0, ty - H * 0.02, bw * 0.55, H * 0.15, lt(A, 0.05));
+        ln(hx0 + bw * 0.3, ty - H * 0.06, hx0 + bw * 1.1, ty + H * 0.02 + cw * 2, 3.4, A);
+        ell(hx0 + 2, ty - H * 0.2, H * 0.09, H * 0.09, A);
+        if (has('hair')) for (let i = 0; i < 4; i++) ln(hx0 - 2, ty - H * 0.27, hx0 - W * 0.15 - i * 2 - sw * 2, ty - H * 0.05 + i * 4, 2.2, B);
+        if (has('hood')) { ell(hx0 + 2, ty - H * 0.2, H * 0.14, H * 0.1, B, 0, true); ell(hx0 + 2, ty - H * 0.2, H * 0.09, H * 0.09, A); }
+        eyeAt(hx0 + 5, ty - H * 0.21, 2.1, EY);
+      } else {
+        ell(hx0 - W * 0.03, hy0 - H * 0.04, H * 0.18, H * 0.12, B, 0, true); ell(hx0 + 3, hy0 - H * 0.1, H * 0.09, H * 0.075, A); eyeAt(hx0 + 7, hy0 - H * 0.11, 2.1, EY);
+        ln(hx0 + 12, hy0 - H * 0.08, hx0 + 18, hy0 - H * 0.06, 1, '#d83a3a');
+      }
+    } else if (p === 'bug') {
+      if (has('spi')) {
+        c.save(); if (has('phase')) c.globalAlpha *= 0.72 + 0.28 * Math.sin(t * 7);
+        const by = -H * 0.55 - 3;
+        for (const side of [0, 1]) for (let i = 0; i < 4; i++) {
+          const x0 = -W * 0.04 + i * W * 0.07 - (side ? 0 : W * 0.04), dir = i < 2 ? 1 : -1, sg = Math.sin(ph + i * 1.4 + side * 3) * 3, kx = x0 + dir * W * 0.2, ky = -H * (0.95 + (side ? 0.1 : 0)) - sg;
+          c.strokeStyle = side ? dk(A, 0.15) : dk(A, 0.4); c.lineWidth = 1.8; c.beginPath(); c.moveTo(x0, by); c.lineTo(kx, ky); c.lineTo(kx + dir * W * 0.12 + sg, 0); c.stroke();
+        }
+        ell(-W * 0.14, by, W * 0.23, H * 0.32, A); ell(W * 0.18, by + 1, W * 0.13, H * 0.2, dk(A, 0.1));
+        if (has('phase')) ell(-W * 0.16, by - H * 0.05, W * 0.1, H * 0.12, C, 0, true);
+        if (has('web')) { ln(-W * 0.35, by, -W * 0.5, by - H * 0.3 + sw, 0.8, '#e8e8f0'); ln(-W * 0.35, by, -W * 0.55, by + H * 0.1, 0.8, '#e8e8f0'); }
+        for (let i = 0; i < 3; i++) eyeAt(W * 0.26 + (i % 2) * 2, by - 3 + i * 2.5, 1.4, C);
+        pg([W * 0.3, by + 3, W * 0.33, by + 8, W * 0.34, by + 3], '#f4f0e0');
+        c.restore();
+      } else if (has('cent')) {
+        const n = 8;
+        for (let i = n; i >= 0; i--) {
+          const u = i / n, x0 = -W * 0.42 + u * W * 0.78, y0 = -H * 0.55 + Math.sin(ph + i * 0.9) * H * 0.12, r = i === n ? H * 0.5 : H * 0.42;
+          ln(x0, y0, x0 - 2 + Math.sin(ph + i) * 2, 0, 1.6, dk(A, 0.3)); ln(x0 + 3, y0, x0 + 4 + Math.cos(ph + i) * 2, 0, 1.6, dk(A, 0.3));
+          ell(x0, y0, W * 0.07, r, i % 2 ? A : B);
+        }
+        const hx2 = W * 0.38, hy2 = -H * 0.55 + Math.sin(ph + 8 * 0.9) * H * 0.12;
+        ln(hx2 + 3, hy2 - 3, hx2 + 12, hy2 - 9 + sw * 2, 1.2, B); ln(hx2 + 6, hy2 + 3, hx2 + 12, hy2 + 7, 2.2, '#d8cdb0'); eyeAt(hx2 + 3, hy2 - 2, 1.6, C);
+      } else if (has('crab')) {
+        const by = -H * 0.5;
+        for (const side of [0, 1]) for (let i = 0; i < 3; i++) { const x0 = -W * 0.2 + i * W * 0.15 + side * 3, sg = Math.sin(ph + i * 2 + side * 3) * 3; c.strokeStyle = dk(A, side ? 0.1 : 0.35); c.lineWidth = 2.4; c.beginPath(); c.moveTo(x0, by); c.lineTo(x0 + (i - 1) * 5 + sg, -H * 0.8); c.lineTo(x0 + (i - 1) * 9, 0); c.stroke(); }
+        ell(0, by, W * 0.3, H * 0.3, A); ell(0, by - H * 0.05, W * 0.2, H * 0.14, lt(A, 0.15), 0, true);
+        ln(W * 0.22, by - 2, W * 0.4, by - H * 0.5 + sw * 2, 3.4, A); ell(W * 0.44, by - H * 0.62 + sw * 2, W * 0.1, H * 0.16, B); pg([W * 0.47, by - H * 0.62 + sw * 2, W * 0.58, by - H * 0.56 + sw * 2, W * 0.47, by - H * 0.5 + sw * 2], '#1a0a0a');
+        ln(W * 0.25, by - H * 0.16, W * 0.28, by - H * 0.42, 1.6, A); eyeAt(W * 0.28, by - H * 0.45, 2.2, C);
+      } else if (has('beetle')) {
+        const by = -H * 0.5;
+        for (let i = 0; i < 3; i++) { const x0 = -W * 0.18 + i * W * 0.17, sg = Math.sin(ph + i * 2) * 3; ln(x0, by + 2, x0 + sg + 3, 0, 2.4, dk(A, 0.35)); }
+        ell(-W * 0.05, by, W * 0.32, H * 0.38, A); ln(-W * 0.05, by - H * 0.38, -W * 0.05, by + H * 0.3, 1, dk(A, 0.5)); ell(-W * 0.12, by - H * 0.12, W * 0.12, H * 0.1, lt(A, 0.25), -0.3, true);
+        ell(W * 0.3, by + 2, W * 0.1, H * 0.2, dk(A, 0.15));
+        if (has('mandible')) { ln(W * 0.36, by + 2, W * 0.5, by - 5 + sw * 2, 3, '#e0d4b0'); ln(W * 0.36, by + 7, W * 0.5, by + 12 - sw * 2, 3, '#e0d4b0'); }
+        eyeAt(W * 0.33, by - 3, 1.8, C);
+      } else if (has('hand')) {
+        const by = -H * 0.38 - Math.abs(sw) * 2;
+        for (let i = 0; i < 5; i++) { const a = -0.5 + i * 0.5, fx = Math.cos(a) * W * 0.55 + (i === 0 ? -W * 0.15 : 0), jy = Math.sin(ph + i * 1.3) * 3; c.strokeStyle = A; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, by); c.lineTo(-W * 0.3 + i * W * 0.2, by + H * 0.15 + jy); c.lineTo(-W * 0.4 + i * W * 0.25, -1); c.stroke(); }
+        ell(0, by - 2, W * 0.3, H * 0.3, A); ell(0, by - 3, W * 0.15, H * 0.12, B, 0, true); ln(W * 0.2, by - 6, W * 0.34, by - H * 0.5 + sw * 2, 3, A); ln(W * 0.34, by - H * 0.5 + sw * 2, W * 0.36, by - H * 0.75, 2, '#f0e8d0');
+      }
+    }
+  }
+
   drawEnemyRaw(c, e, inFlash) {
     const g = this.g, t = g.t + e.ph;
     if (e.elite) glow(c, e.x + e.w / 2, e.y + e.h / 2, e.w * 0.9 + 18 + Math.sin(g.t * 5) * 3, hexA(e.elite.c, 0.5));
     c.save(); c.translate(e.x + e.w / 2, e.y + e.h); c.scale(e.dir || 1, 1);
     if (e.sc) c.scale(e.sc, e.sc);
-    const ground = ['ghoul', 'skel', 'revenant', 'spider', 'warden', 'saint', 'nura', 'frostwolf', 'yeti', 'draugr', 'mummy', 'jackal', 'scorpion', 'cobra', 'pharaoh', 'terra', 'jiangshi', 'wallarcher', 'qin'].indexOf(e.t) >= 0 || (e.t === 'dragon' && e.form !== 1) || (e.t === 'gargoyle' && !e.awake);
-    if (ground && !H3B[e.t]) shade(c, 0, 0, e.w * 0.62 / (e.sc || 1));
-    if (!(H3D.on && this.boss3dDraw(c, e, t))) switch (e.t) {
+    const ground = ['ghoul', 'skel', 'revenant', 'spider', 'warden', 'saint', 'nura', 'frostwolf', 'yeti', 'draugr', 'mummy', 'jackal', 'scorpion', 'cobra', 'pharaoh', 'terra', 'jiangshi', 'wallarcher', 'qin'].indexOf(e.t) >= 0 || (e.t === 'dragon' && e.form !== 1) || (e.t === 'gargoyle' && !e.awake) || (GEN[e.t] && FLY.indexOf(e.t) < 0);
+    if (ground) shade(c, 0, 0, e.w * 0.62 / (e.sc || 1));
+    switch (e.t) {
       case 'ghoul': this.artGhoul(c, e, t); break;
       case 'skel': this.artSkel(c, e, t); break;
       case 'bat': this.artBat(c, e, t); break;
@@ -6382,9 +7328,10 @@ class Component extends DCLogic {
       case 'lantern': this.artLantern(c, e, t); break;
       case 'qin': this.artQin(c, e, t); break;
       case 'longa': case 'longb': this.artLong(c, e, t); break;
+      default: if (GEN[e.t]) this.artGen(c, e, t);
     }
     if (Array.isArray(e.gear) && e.gear.length) this.drawGear(c, e, t);
-    if (e.v && !H3B[e.t]) this.varFx(c, e, t, 0);
+    if (e.v) this.varFx(c, e, t, 0);
     c.filter = 'none'; c.restore();
     this.drawStatus(c, e);
     if (!e.elite && !e.pet && e.hp < e.mhp && e.t !== 'saint' && e.t !== 'warden' && e.t !== 'nura' && e.t !== 'dragon' && e.t !== 'pharaoh' && e.t !== 'witch' && e.t !== 'qin' && e.t !== 'longa' && e.t !== 'longb') { this.rect(e.x, e.y - 8, e.w, 3, 'rgba(0,0,0,0.6)'); this.rect(e.x, e.y - 8, e.w * Math.max(0, e.hp / e.mhp), 3, '#c4303c'); }
@@ -8105,6 +9052,10 @@ class Component extends DCLogic {
         c.fillStyle = 'rgba(255,80,60,' + (0.4 + pulse) + ')'; c.beginPath(); c.ellipse(z.x + z.w / 2, by - 1, z.w * 0.7, 5, 0, 0, 7); c.fill();
       } else if (z.k === 'root') {
         c.fillStyle = '#2a1a12'; for (let i = 0; i < 3; i++) { const bx = z.x + 6 + i * 12; poly(c, [[bx - 6, by], [bx, by - z.h * (0.8 + i % 2 * 0.2)], [bx + 6, by]], '#3a2418'); poly(c, [[bx - 2, by], [bx, by - z.h * (0.8 + i % 2 * 0.2)], [bx + 2, by]], '#7a5a3a'); }
+      } else if (z.k === 'rock') {
+        const pr = 1 - z.life / (z.l0 || 0.3), ry = z.y + (z.h - 18) * Math.min(1, pr * 1.1);
+        glow(c, z.x + z.w / 2, ry, 30, 'rgba(160,140,120,0.35)'); c.fillStyle = '#6a625a'; c.beginPath(); c.ellipse(z.x + z.w / 2, ry, 15, 14, 0, 0, 7); c.fill(); c.fillStyle = '#8a8278'; c.beginPath(); c.ellipse(z.x + z.w / 2 - 4, ry - 4, 6, 5, 0, 0, 7); c.fill();
+        if (pr > 0.85) { c.fillStyle = 'rgba(140,120,100,0.5)'; c.beginPath(); c.ellipse(z.x + z.w / 2, z.y + z.h, 34, 7, 0, 0, 7); c.fill(); }
       } else if (z.k === 'flame' || z.k === 'hbeam') {
         const hb = z.k === 'hbeam', fl = 0.75 + 0.25 * Math.sin(g.t * 30);
         if (hb) { const gr = c.createLinearGradient(0, z.y, 0, z.y + z.h); gr.addColorStop(0, 'rgba(255,90,20,0)'); gr.addColorStop(0.5, 'rgba(255,170,50,' + fl + ')'); gr.addColorStop(1, 'rgba(255,90,20,0)'); c.fillStyle = gr; c.fillRect(z.x, z.y - 6, z.w, z.h + 12); c.fillStyle = 'rgba(255,248,200,' + fl + ')'; c.fillRect(z.x, z.y + z.h / 2 - 4, z.w, 8); }
@@ -8276,12 +9227,14 @@ class Component extends DCLogic {
     const labels = { weapon: 'Weapon', shield: 'Shield', helm: 'Helm', armor: 'Armor', gloves: 'Gloves', boots: 'Boots', ring: 'Ring', amulet: 'Amulet', belt: 'Belt' };
     if (!this.tab) this.tab = 'eq';
     const p = g.p, wk = h.sub || 'sword';
-    const skills = SK[wk].map((q, i) => {
-      const cdMax = this.skillCd(S, wk, i), cd = Math.max(0, p.skCd[wk + i] || 0), cost = this.skillCost(S, wk, i), un = this.skUnlock(wk, i), lv = this.sklv(wk, i);
-      if (!un.ok) return { key: ['K', 'L', 'I'][i], name: q.n, cost: 'LOCKED', cdW: '0%', col: '#3a2a28', tc: '#6f6458' };
-      return { key: ['K', 'L', 'I'][i], name: q.n + ' · Lv ' + lv + (lv >= SKMAX ? ' MAX' : ''), cost: cost + ' MP', cdW: clamp(cd / cdMax * 100, 0, 100) + '%', col: cd > 0 ? '#6a4a44' : (h.mp >= cost ? '#c9a24a' : '#5a6a8a'), tc: cd > 0 ? '#a89a8c' : '#f0e3c0' };
+    const skills = [0, 1, 2].map((j) => {
+      const i = this.bound(wk, j), kk = ['K', 'L', 'I'][j];
+      if (i < 0) return { key: kk, name: 'Empty — learn skills (Skills tab)', cost: '', cdW: '0%', col: '#3a2a28', tc: '#6f6458' };
+      const q = SK[wk][i], cdMax = this.skillCd(S, wk, i), cd = Math.max(0, p.skCd[wk + i] || 0), cost = this.skillCost(S, wk, i), lv = this.sklv(wk, i);
+      return { key: kk, name: q.n + ' · Lv ' + lv + (lv >= SKMAX ? ' MAX' : ''), cost: cost + ' MP', cdW: clamp(cd / cdMax * 100, 0, 100) + '%', col: cd > 0 ? '#6a4a44' : (h.mp >= cost ? '#c9a24a' : '#5a6a8a'), tc: cd > 0 ? '#a89a8c' : '#f0e3c0' };
     });
-    const skillReq = SK[wk].map((q, i) => { const u = this.skUnlock(wk, i); return u.ok ? '' : q.n + ': ' + u.why; }).filter(Boolean).join('  |  ') || 'All ' + SKN[wk] + ' skills unlocked. Skills level up as you use them.';
+    const HBU = this.hbUi();
+    const skillReq = 'Skill points: ' + this.spFree() + ' — spend them, then click a hotbar slot (bottom of screen) to set skills/attacks. Keys 1-0; LM/RM slots = mouse buttons.';
     const pets = h.pets.map((d) => {
       const def = PETD[d.t], act = h.petId === d.id;
       return { name: d.name, col: act ? '#ffb7d0' : '#e9e0d0', lvText: 'Lv ' + d.lv + (d.lv >= PETLV ? ' MAX' : ' · ' + d.xp + '/' + petNeed(d.lv) + ' xp') + ' · ATK ' + Math.round(this.petAtk(d)) + ' · DEF ' + Math.round(this.petDef(d)),
@@ -8348,9 +9301,9 @@ class Component extends DCLogic {
     const rel = [h.hasKey ? 'Red Key' : '', h.hasWing ? 'Wing Sigil' : '', h.hpUp ? 'Hearts x' + (h.hpUp / 15) : ''].filter(Boolean);
     return {
       wrapRef: this.wrapRef, canvasRef: this.canvasRef,
-      onKeyDown: this.onKeyDown, onKeyUp: this.onKeyUp, onBlur: this.onBlur,
+      onKeyDown: this.onKeyDown, onKeyUp: this.onKeyUp, onBlur: this.onBlur, onMouseDown: this.onMouseDown, onMouseUp: this.onMouseUp, onMouseLeave: this.onMouseLeave, onCtx: this.onCtx,
       primary: this.primary, buyPotion: this.buyPotion, drinkPotion: this.drinkPotion,
-      level: h.level, stage: g.stage, gold: h.gold, potions: h.potions,
+      level: h.level, stage: g.stage, gold: h.gold, potions: h.potions, mpots: h.mpots || 0, buyLabel: 'Health potion ' + this.potCost() + 'g', buyManaLabel: 'Mana potion ' + this.manaCost() + 'g', buyManaPot: this.buyManaPot, drinkMana: this.drinkMana,
       subName: this.subName(h.sub), mpText: Math.floor(h.mp) + '/' + S.maxMp, mpW: clamp(h.mp / S.maxMp * 100, 0, 100) + '%',
       weaponsText: SKORD.map((k, i) => h.weapons[k] ? (k === (h.sub || 'sword') ? '[' + (i + 1) + ' ' + this.subName(k) + ']' : (i + 1) + ' ' + this.subName(k)) : '? ' + this.subName(k)).join(' · '),
       roomName: this.cur.R.name, relics: rel.length ? rel.join(' · ') : 'none yet',
@@ -8373,13 +9326,14 @@ class Component extends DCLogic {
       ],
       panelOpen: !!g.panel, togglePanel: () => this.togglePanel(), dollS, packCells, dt_has: det.has, dt_name: det.name, dt_col: det.col, dt_rar: det.rar, dt_slot: det.slot, dt_desc: det.desc, dt_meta: det.meta, dt_canEquip: det.canEquip, dt_locked: det.locked, dt_req: det.req, dt_isEq: det.isEq, dt_isPack: det.isPack, dt_equip: det.equip, dt_unequip: det.unequip, dt_sell: det.sell, detNone: !selIt,
       pets, petCount: h.pets.length, petMax: PETMAX, petEmpty: h.pets.length === 0, hasPet: !!ap, petName: ap ? ap.name : '', petLv: ap ? ap.lv : 0, petXpW: ap ? (ap.lv >= PETLV ? 100 : clamp(ap.xp / petNeed(ap.lv) * 100, 0, 100)) + '%' : '0%',
+      tabSkills: this.tab === 'skills', skillsBg: this.tab === 'skills' ? '#4a2a22' : '#2a1c1a', goSkills: () => { this.tab = 'skills'; this.touch(true); this.refocus(); }, skTabLabel: 'Skills' + (this.spFree() > 0 ? ' \u2605' + this.spFree() : ''), ...(this.tab === 'skills' ? this.trPanel() : { skPts: '', skTabs: [], skNodes: [], skReset: () => {}, skResetLabel: '' }),
       tabPets: this.tab === 'pets', petsBg: this.tab === 'pets' ? '#4a2a22' : '#2a1c1a', goPets: () => { this.tab = 'pets'; this.touch(true); this.refocus(); },
-      skills, skillText, skillReq, tabEq: this.tab === 'eq', tabPack: this.tab === 'pack',
+      skills, skillText, skillReq, hotbar: HBU.hotbar, hbOpts: HBU.hbOpts, hbTitle: HBU.hbTitle, hbShow: HBU.hbShow, tabEq: this.tab === 'eq', tabPack: this.tab === 'pack',
       eqBg: this.tab === 'eq' ? '#4a2a22' : '#2a1c1a', packBg: this.tab === 'pack' ? '#4a2a22' : '#2a1c1a',
       goEq: () => { this.tab = 'eq'; this.touch(true); this.refocus(); }, goPack: () => { this.tab = 'pack'; this.touch(true); this.refocus(); },
       slots, pack, packCount: h.pack.length, packMax: PCAP, packEmpty: h.pack.length === 0, sortPack: () => this.sortPack(), expandPack: () => this.expandPack(), expandLabel: this.packCap() >= PACKMAX ? 'Max size' : 'Expand +' + PACKSTEP + ' · ' + this.expandCost() + 'g', cantExpand: this.packCap() >= PACKMAX || h.gold < this.expandCost(), cantSort: h.pack.length < 2,
       log: g.log.length ? g.log : [{ text: 'Your journey begins.', col: '#a89a8c' }],
-      cantBuy: h.gold < POTION, cantDrink: h.potions <= 0 || h.hp >= S.maxHp || g.mode !== 'play'
+      cantBuy: h.gold < this.potCost(), cantBuyMana: h.gold < this.manaCost(), cantDrinkMana: !(h.mpots > 0) || h.mp >= S.maxMp || g.mode !== 'play', cantDrink: h.potions <= 0 || h.hp >= S.maxHp || g.mode !== 'play'
     };
   }
 }
